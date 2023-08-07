@@ -1,0 +1,18 @@
+{
+	"extension": {
+		"version": "0.4.2",
+		"json": 1
+	},
+	"project": {
+		"name": "255M",
+		"description": "255M's project for Over Under",
+		"creationDate": "8/6/2023, 11:53:54 PM",
+		"platform": "V5",
+		"language": "cpp",
+		"slot": 1,
+		"sdkVersion": "V5_20220726_10_00_00",
+		"cpp": {
+			"includePath": []
+		}
+	}
+}
