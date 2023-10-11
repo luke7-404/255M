@@ -14,6 +14,7 @@ motor leftBack = motor(PORT1, ratio18_1, false);
 motor leftMid = motor(PORT2, ratio18_1, false);
 motor leftFront = motor(PORT3, ratio18_1, false);
 motor rightBack = motor(PORT4, ratio18_1, false);
+motor rightMid = motor(PORT5, ratio18_1, false);
 motor rightFront = motor(PORT6, ratio18_1, false);
 motor Motor7 = motor(PORT7, ratio18_1, false);
 motor Motor8 = motor(PORT8, ratio18_1, false);

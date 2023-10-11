@@ -9,6 +9,7 @@ extern motor leftBack;
 extern motor leftMid;
 extern motor leftFront;
 extern motor rightBack;
+extern motor rightMid;
 extern motor rightFront;
 extern motor Motor7;
 extern motor Motor8;
