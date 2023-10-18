@@ -96,11 +96,18 @@ void usercontrol(void) {
   pdON = false; // Turns off PD function
   while (1) {
     
+    leftBack.setVelocity(175, pct);
+    leftFront.setVelocity(175, pct);
+    leftMid.setVelocity(175, pct);
+    rightBack.setVelocity(175, pct);
+    rightFront.setVelocity(175, pct);
+    rightMid.setVelocity(175, pct);
+
     // These lines set the controllers analog sticks to the left motors nad right motors using the tank drive layout
     //This is Left Side AXES 3
-    leftFront.spin(fwd, Controller1.Axis3.position(pct), pct);
-    leftMid.spin(fwd, Controller1.Axis3.position(pct), pct);
-    leftBack.spin(fwd, Controller1.Axis3.position(pct), pct);
+    leftFront.spin(reverse, Controller1.Axis3.position(pct), pct);
+    leftMid.spin(reverse, Controller1.Axis3.position(pct), pct);
+    leftBack.spin(reverse, Controller1.Axis3.position(pct), pct);
     //This is Right Side AXES 2
     rightBack.spin(fwd, Controller1.Axis2.position(pct), pct);
     rightMid.spin(fwd, Controller1.Axis2.position(pct), pct);
