@@ -47,10 +47,26 @@ competition Competition;
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
 
+void calibrateInertial(){
+  Inertial.calibrate();
+
+  while (Inertial.isCalibrating()){
+    Controller1.Screen.clearLine(3);
+    Controller1.Screen.print("Calibrating");
+  } 
+
+  Controller1.Screen.clearLine(3);
+  Controller1.Screen.print("Done");
+  Brain.Screen.printAt(0, 60, "Done");
+  Controller1.rumble("..");
+  wait(10, msec);
+}
+
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
 
+  
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
 }
@@ -66,8 +82,10 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  
+  pdON = true;
   drivePD();
+  targetDist = 100000;
+  targetTurn = 90;
 
   switch (runAuton){
     case 1:
@@ -76,14 +94,15 @@ void autonomous(void) {
       break;
     
     case 2:
-      /* Code */
+      //Code
       break;
 
     default:
       Brain.Screen.print("!!! No Auton Selected !!!");
       break;
+      
   }
-  
+
 }
 
 /*---------------------------------------------------------------------------*/
@@ -96,22 +115,22 @@ void usercontrol(void) {
   pdON = false; // Turns off PD function
   while (1) {
     
-    leftBack.setVelocity(175, pct);
-    leftFront.setVelocity(175, pct);
-    leftMid.setVelocity(175, pct);
-    rightBack.setVelocity(175, pct);
-    rightFront.setVelocity(175, pct);
-    rightMid.setVelocity(175, pct);
+    leftBack.setVelocity(100, pct);
+    leftFront.setVelocity(100, pct);
+    leftMid.setVelocity(100, pct);
+    rightBack.setVelocity(100, pct);
+    rightFront.setVelocity(100, pct);
+    rightMid.setVelocity(100, pct);
 
     // These lines set the controllers analog sticks to the left motors nad right motors using the tank drive layout
     //This is Left Side AXES 3
-    leftFront.spin(reverse, Controller1.Axis3.position(pct), pct);
-    leftMid.spin(reverse, Controller1.Axis3.position(pct), pct);
-    leftBack.spin(reverse, Controller1.Axis3.position(pct), pct);
+    leftFront.spin(fwd, Controller1.Axis3.position(pct), pct);
+    leftMid.spin(fwd, Controller1.Axis3.position(pct), pct);
+    leftBack.spin(fwd, Controller1.Axis3.position(pct), pct);
     //This is Right Side AXES 2
-    rightBack.spin(fwd, Controller1.Axis2.position(pct), pct);
-    rightMid.spin(fwd, Controller1.Axis2.position(pct), pct);
-    rightFront.spin(fwd, Controller1.Axis2.position(pct), pct);
+    rightBack.spin(reverse, Controller1.Axis2.position(pct), pct);
+    rightMid.spin(reverse, Controller1.Axis2.position(pct), pct);
+    rightFront.spin(reverse, Controller1.Axis2.position(pct), pct);
 
 
     // Button Assignment //

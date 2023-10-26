@@ -58,9 +58,9 @@ int drivePD() {
     // Gets the position of where the bot is in degrees
     int leftPosition = leftTrack.position(degrees);
     int rightPosition = rightTrack.position(degrees);
-
+    
     // Calculates the average of the tracking wheel positions
-    int avg = (leftPosition + rightPosition) / 2;
+    int avg =  (leftPosition + rightPosition)/2;
 
     // Calculates the error and the derivative
     error = targetDist - avg; 
