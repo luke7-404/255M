@@ -11,13 +11,13 @@ extern motor leftFront;
 extern motor rightBack;
 extern motor rightMid;
 extern motor rightFront;
-extern motor Motor7;
-extern motor Motor8;
+extern motor Cata;
 extern bumper Auton1;
 extern inertial Inertial;
 extern rotation leftTrack;
 extern rotation rightTrack;
 extern motor rightMid;
+extern digital_out piston;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

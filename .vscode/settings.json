@@ -1,10 +1,14 @@
 {
-    "cSpell.words": [
-        "LEDB",
-        "triport"
-    ],
-    "files.associations": {
-        "algorithm": "cpp",
-        "ranges": "cpp"
-    }
+	"cSpell.words": [
+		"LEDB",
+		"triport"
+	],
+	"files.associations": {
+		"algorithm": "cpp",
+		"ranges": "cpp",
+		"iostream": "cpp"
+	},
+	"C_Cpp.default.systemIncludePath": [
+		"${config:vexrobotics.vexcode.Cpp.Sdk.Home}\\V5\\V5_20220726_10_00_00\\vexv5\\gcc\\include\\sys"
+	]
 }

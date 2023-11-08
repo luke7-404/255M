@@ -3,9 +3,13 @@
 
 using namespace vex;
 
+
 /**
- *  @brief PD or Proportional Derivative is a type of PID Controller that allows the
- *         robot to mathematically make accurate turns and consistant lateral movements
+ * The Following is about PD loops. The form of the loop was developed by
+ * Conner from Team 1814D: His tutorial video link https://youtu.be/_Itn-0d340g
+ * 
+ *  PD or Proportional Derivative Controller is a type of PID Controller that allows
+ *  the robot to mathematically make accurate turns and consistant lateral movements
  * 
  *  * the variables that start with the lower-case t stand  
  *  * for turn and are meant for the turning equations
@@ -20,14 +24,14 @@ double TkP = 0.5;
 double TkD = 0.5;
 
 /**
- * @Variable  error/ tError             the difference between where the bot is and the end set point is  
+ * error/ tError             the difference between where the bot is and the end set point is  
  *  
- * @Variable  prevError/ tPrevError     the past error (20 milli-secs) used for the derivative calculation
+ * prevError/ tPrevError     the past error (20 milli-secs) used for the derivative calculation
  * 
- * @Variable  derivative/ tDerivative   the derivative manages the speed by using the rate of change
- *                                      from both previous and current errors 
+ * derivative/ tDerivative   the derivative manages the speed by using the rate of change
+ *                           from both previous and current errors 
  * 
- * @Variable  targetDist/ targetTurn    the set or end distance of where the ends
+ * targetDist/ targetTurn    the set or end distance of where the ends
 */
 
 int error = 0;
@@ -35,10 +39,10 @@ int prevError = 0;
 int derivative = 0; 
 double targetDist = 0.0;
 
-int tError = 0; 
+int tError; 
 int tPrevError = 0; 
 int tDerivative = 0;
-double targetTurn = 0.0;
+double targetTurn;
 
 // Boolean variables - True or false variables
 
@@ -73,11 +77,12 @@ int drivePD() {
     
     // Calculates the error and the derivative for turning 
     tError = targetTurn - Inertial.rotation(degrees);
-    tDerivative = tError + tPrevError;
+    tDerivative = tError - tPrevError;
 
     // Rotational Motor Power
     double turnMotorPower = tError * TkP + tDerivative * TkD;
 
+    
     // Set motor speed in voltage
     leftBack.spin(forward, latMotorPower - turnMotorPower, volt);
     leftMid.spin(forward, latMotorPower - turnMotorPower, volt);

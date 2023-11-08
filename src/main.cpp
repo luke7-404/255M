@@ -17,9 +17,9 @@
 // leftFront            motor         3               
 // rightBack            motor         4               
 // rightFront           motor         6               
-// Motor7               motor         7               
-// Motor8               motor         8               
-// Auton1               bumper        A               
+// Cata                 motor         8               
+// Motor8               motor         9               
+// Auton1               bumper        C               
 // Inertial             inertial      10              
 // leftTrack            rotation      11              
 // rightTrack           rotation      12              
@@ -28,7 +28,6 @@
 
 #include "vex.h"
 #include "Drive_PD.cpp"
-#include "Call_Backs.cpp"
 
 using namespace vex;
 
@@ -46,6 +45,33 @@ competition Competition;
 /*  function is only called once after the V5 has been powered on and        */
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
+
+int runAuton = 0;
+
+void AutoBump(){
+    
+  if (runAuton >= 3){
+    runAuton = 0;
+  } else runAuton++;
+    
+  switch (runAuton){
+    case 1:
+      Brain.Screen.clearLine(2);
+      Brain.Screen.printAt(2, 40, "Auton 1 has been selected");
+      break;
+
+    case 2:
+      Brain.Screen.clearLine(2);
+      Brain.Screen.printAt(2, 40, "Auton 2 has been selected");
+      break;  
+    
+    default:
+      Brain.Screen.clearLine(2);
+      Brain.Screen.printAt(2, 40, "!!! No Auton selected !!!");
+      break;
+      
+  }
+}
 
 void calibrateInertial(){
   Inertial.calibrate();
@@ -65,7 +91,7 @@ void calibrateInertial(){
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
-
+  calibrateInertial();
   
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
@@ -83,11 +109,14 @@ void pre_auton(void) {
 
 void autonomous(void) {
   pdON = true;
-  drivePD();
-  targetDist = 100000;
+  resetSens = true;
+  vex::task PD(drivePD);
   targetTurn = 90;
+  
 
-  switch (runAuton){
+}
+/*
+switch (runAuton){
     case 1:
       targetDist = 0;
       targetTurn = 0;
@@ -102,9 +131,7 @@ void autonomous(void) {
       break;
       
   }
-
-}
-
+*/
 /*---------------------------------------------------------------------------*/
 /*                              User Control Task                            */
 /*---------------------------------------------------------------------------*/
@@ -112,9 +139,17 @@ void autonomous(void) {
 void usercontrol(void) {
   // User control code here, inside the loop
 
-  pdON = false; // Turns off PD function
+  bool toggleEnabled = false; // two-choice toggle, so we use bool
+  bool buttonPressed = false; // logic variable
+
+
+  //pdON = false; // Turns off PD function
   while (1) {
-    
+
+    Brain.Screen.printAt(2, 80, "left track %f", leftTrack.position(deg));
+    Brain.Screen.printAt(2, 100, "right track %f", rightTrack.position(deg));
+    Brain.Screen.printAt(2, 120, "Inertial %f", Inertial.heading(deg));
+
     leftBack.setVelocity(100, pct);
     leftFront.setVelocity(100, pct);
     leftMid.setVelocity(100, pct);
@@ -128,12 +163,41 @@ void usercontrol(void) {
     leftMid.spin(fwd, Controller1.Axis3.position(pct), pct);
     leftBack.spin(fwd, Controller1.Axis3.position(pct), pct);
     //This is Right Side AXES 2
-    rightBack.spin(reverse, Controller1.Axis2.position(pct), pct);
-    rightMid.spin(reverse, Controller1.Axis2.position(pct), pct);
-    rightFront.spin(reverse, Controller1.Axis2.position(pct), pct);
+    rightBack.spin(fwd, Controller1.Axis2.position(pct), pct);
+    rightMid.spin(fwd, Controller1.Axis2.position(pct), pct);
+    rightFront.spin(fwd, Controller1.Axis2.position(pct), pct);
 
 
     // Button Assignment //
+    if(Controller1.ButtonL2.pressing()){
+      Cata.spin(fwd);
+    }else if(Controller1.ButtonR2.pressing()){
+      Cata.spin(reverse);
+    }else{
+      Cata.stop(hold);
+    }
+
+
+    bool buttonX = Controller1.ButtonX.pressing(); // boolean to get if the button is pressed (true) or it isn't pressed (false)
+
+    // Toggle Logic
+    if (buttonX && !buttonPressed){
+      buttonPressed = true; 
+      toggleEnabled = !toggleEnabled;
+    }
+    else if (!buttonX) buttonPressed = false;
+    /* from the logic above we take the output of if the toggledEnabled is true or false and then we use it to spin the fly wheel motor */
+
+    // Code For toggle Enabled or Disabled
+    if(toggleEnabled){
+
+      piston.set(true); // spin the motor
+    } else{
+      piston.set(false);// stops the motor but keeps the motion die off
+    }
+    
+
+
 
 
 
