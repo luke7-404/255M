@@ -17,7 +17,6 @@ motor rightBack = motor(PORT12, ratio6_1, true);
 motor rightMid = motor(PORT13, ratio6_1, false);
 motor rightFront = motor(PORT11, ratio6_1, false);
 motor Cata = motor(PORT8, ratio36_1, true);
-//motor Motor8 = motor(PORT9, ratio18_1, false);
 bumper Auton1 = bumper(Brain.ThreeWirePort.C);
 inertial Inertial = inertial(PORT3);
 rotation leftTrack = rotation(PORT10, true);
@@ -43,14 +42,5 @@ void vexcodeInit( void ) {
 // gps GPS = gps(PORT12, 0.00, 0.00, mm, 180); // (port, x offset, y offset, measurement, angle offset)
 // potV2 PotentiometerV2A = potV2(Brain.ThreeWirePort.A); // Potentiometer 
 // led LEDB = led(Brain.ThreeWirePort.B); // __ LED
-// digital_out DigitalOutC = digital_out(Brain.ThreeWirePort.C); // Pneumatics
-// controller Controller1 = controller(partner);
-// motor Motor7 = motor(PORT7, ratio18_1, false);
-// motor Motor8 = motor(PORT8, ratio18_1, false);
 // triport Expander13 = triport(PORT13);
 // limit Auton1 = limit(Brain.ThreeWirePort.A); // Limit Switch
-
-//* Motor Group
-// - Motor setup: motor name1 = motor(PORT, ratio, t/f)
-// - Motor setup: motor name2 = motor(PORT, ratio, t/f)
-// motor_group MotorGroup15 = motor_group(name1, name2);

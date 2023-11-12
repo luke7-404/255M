@@ -27,7 +27,6 @@
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "vex.h"
-#include "Drive_PD.cpp"
 
 using namespace vex;
 
@@ -50,7 +49,7 @@ int runAuton = 0;
 
 void AutoBump(){
     
-  if (runAuton >= 3){
+  if (runAuton > 3){
     runAuton = 0;
   } else runAuton++;
     
@@ -93,6 +92,8 @@ void pre_auton(void) {
   vexcodeInit();
   calibrateInertial();
   
+  rightTrack.setPosition(0, degrees); 
+  leftTrack.setPosition(0, degrees);
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
 }
@@ -108,30 +109,47 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  pdON = true;
-  resetSens = true;
-  vex::task PD(drivePD);
-  targetTurn = 90;
-  
-
-}
-/*
-switch (runAuton){
+  Brain.Screen.clearScreen();
+  switch (runAuton){
     case 1:
-      targetDist = 0;
-      targetTurn = 0;
+      // code
       break;
-    
+
     case 2:
       //Code
       break;
 
     default:
-      Brain.Screen.print("!!! No Auton Selected !!!");
+    
+      leftBack.setVelocity(40, pct);
+      leftFront.setVelocity(40, pct);
+      leftMid.setVelocity(40, pct);
+      rightBack.setVelocity(40, pct);
+      rightFront.setVelocity(40, pct);
+      rightMid.setVelocity(40, pct);
+
+      leftBack.spinFor(fwd, 2880, degrees, false);
+      leftFront.spinFor(fwd, 2880, degrees, false);
+      leftMid.spinFor(fwd, 2880, degrees, false);
+      rightBack.spinFor(fwd, 2880, degrees, false);
+      rightFront.spinFor(fwd, 2880, degrees, false);
+      rightMid.spinFor(fwd, 2880, degrees, true);
+      
+      //Cata.spin(fwd, true);
+
+      leftBack.spinFor(reverse, 1200, degrees, false);
+      leftFront.spinFor(reverse, 1200, degrees, false);
+      leftMid.spinFor(reverse, 1200, degrees, false);
+      rightBack.spinFor(reverse, 1200, degrees, false);
+      rightFront.spinFor(reverse, 1200, degrees, false);
+      rightMid.spinFor(reverse,1200, degrees, true);
+      
+  
+      //Brain.Screen.print("!!! No Auton Selected !!!");
       break;
       
   }
-*/
+}
 /*---------------------------------------------------------------------------*/
 /*                              User Control Task                            */
 /*---------------------------------------------------------------------------*/
@@ -142,13 +160,7 @@ void usercontrol(void) {
   bool toggleEnabled = false; // two-choice toggle, so we use bool
   bool buttonPressed = false; // logic variable
 
-
-  //pdON = false; // Turns off PD function
   while (1) {
-
-    Brain.Screen.printAt(2, 80, "left track %f", leftTrack.position(deg));
-    Brain.Screen.printAt(2, 100, "right track %f", rightTrack.position(deg));
-    Brain.Screen.printAt(2, 120, "Inertial %f", Inertial.heading(deg));
 
     leftBack.setVelocity(100, pct);
     leftFront.setVelocity(100, pct);
@@ -169,38 +181,37 @@ void usercontrol(void) {
 
 
     // Button Assignment //
+
+    // Catapult Motor Logic
+    // when L2 is being pressed spin forward
     if(Controller1.ButtonL2.pressing()){
       Cata.spin(fwd);
+
+      // when R2 is being pressed spin reverse
     }else if(Controller1.ButtonR2.pressing()){
       Cata.spin(reverse);
+
+      // else stop
     }else{
       Cata.stop(hold);
     }
 
-
-    bool buttonX = Controller1.ButtonX.pressing(); // boolean to get if the button is pressed (true) or it isn't pressed (false)
+    // boolean to get if the button is pressed (true) or it isn't pressed (false)
+    bool buttonL1 = Controller1.ButtonL1.pressing();
 
     // Toggle Logic
-    if (buttonX && !buttonPressed){
+    if (buttonL1 && !buttonPressed){
       buttonPressed = true; 
       toggleEnabled = !toggleEnabled;
     }
-    else if (!buttonX) buttonPressed = false;
-    /* from the logic above we take the output of if the toggledEnabled is true or false and then we use it to spin the fly wheel motor */
+    else if (!buttonL1) buttonPressed = false;
 
     // Code For toggle Enabled or Disabled
     if(toggleEnabled){
-
-      piston.set(true); // spin the motor
+      piston.set(true); // open wings
     } else{
-      piston.set(false);// stops the motor but keeps the motion die off
+      piston.set(false);// close wings
     }
-    
-
-
-
-
-
 
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
@@ -215,7 +226,7 @@ int main() {
   Competition.autonomous(autonomous);
   Competition.drivercontrol(usercontrol);
 
-  Auton1.pressed(AutoBump);
+  Auton1.pressed(AutoBump); // When bumper is pressed it cycles through different autonomous 
 
   // Run the pre-autonomous function.
   pre_auton();

@@ -32,15 +32,8 @@ void  vexcodeInit( void );
 // extern gps GPS;
 // extern potV2 PotentiometerV2A; // Potentiometer 
 // extern led LEDB; // __ LED
-// extern digital_out DigitalOutC; // Pneumatics
-// extern controller Controller1;
-// extern motor Motor7;
-// extern motor Motor8;
 // extern triport Expander13;
 // extern limit Auton1; // Limit Switch
-
-//* Motor Group
-// extern motor_group MotorGroup15;
 
 
 
