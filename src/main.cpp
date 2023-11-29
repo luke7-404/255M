@@ -44,6 +44,12 @@ competition Competition;
 /*  function is only called once after the V5 has been powered on and        */
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
+int launched = 0;
+void launchCount(){
+  launched++;
+  Controller1.Screen.clearLine(3);
+  Controller1.Screen.print("Count %d", launched);
+}
 
 int runAuton = 0;
 
@@ -87,6 +93,111 @@ void calibrateInertial(){
   wait(10, msec);
 }
 
+
+// PD controller
+
+// Lateral Variables
+
+// Gain variables - Deals with controller sensitivity
+double kP = 0.0; // error gain
+double kD = 0.0; // derivative gain
+
+int error = 0; // the difference from where the goal is to where you are 
+int derivative = 0; // the difference from current error and prevError
+int prevError = 0; // the last error
+int targetDist = 0; // Goal distance (Lateral Movement)
+
+
+// Rotational Variables
+
+// Gain variables - Deals with controller sensitivity (for turning)
+double Turn_kP = 1; // turn error gain
+double Turn_kD = 0.0; // turn derivative gain
+
+double TurnError = 0; // the difference from where the goal is to where you are
+int TurnDerivative = 0; // the difference from current turn error and TurnPrevError
+int TurnPrevError = 0; // the last turn error
+double targetTurn = 0; // Goal Distance (Rotational Movement)
+
+
+// Boolean Variables 
+bool controlON = true; // Toggles the while loop for the controller
+bool resetSens = false; // Toggles if the sensors are reset to 0
+
+int PD_Control(){ // Declaration
+  while(controlON){ // while loop for the controller (Needed to update values)
+
+    // When true the sensors will be reset to 0
+    if(resetSens){
+      resetSens = false;
+      leftTrack.resetPosition();
+      rightTrack.resetPosition();
+    }
+
+    // Makes the rotation encoders an integer variable 
+    int leftPos = leftTrack.position(degrees);
+    int rightPos = rightTrack.position(degrees);
+
+    // the average between both sides 
+    int avg = (leftPos + rightPos)/2;
+
+    error = targetDist - avg; // the difference of target and current location
+
+    derivative = error - prevError; // derivative
+
+    // Lateral(Lat) Motor(Mtr) Power(Pwr) equation
+    double LatMtrPwr = (error * kP)+(derivative * kD); 
+
+    ////////////////////////////////////////////////////////////////////
+
+    // Makes the Inertial sensor a variable with decimal places
+    double InertPos = Inertial.rotation(degrees);
+
+    // Adds a limit to the sensor so it doesn't go past 360
+    // if less than -180 it wraps to positive 180 and vice versa
+    if(InertPos < -180){
+      InertPos = 180;
+    } else if (InertPos > 180){
+      InertPos = -180;
+    }
+
+    // Error: difference from target and current location
+    TurnError = targetTurn - InertPos;  
+
+    // Print Values to debug when needed
+    Brain.Screen.printAt(0, 20, "Turn Error %f", TurnError);
+    Brain.Screen.printAt(0, 40, "Inertial Position %f", InertPos);
+    
+    TurnDerivative = TurnError - TurnPrevError; // derivative
+    
+    // Print Value to debug when needed
+    Brain.Screen.printAt(0, 60, "Turn Prev Error %f", TurnPrevError);
+
+    
+    // Rotational(Rot) Motor(Mtr) Power(Pwr) equation
+    double RotMtrPwr = (TurnError * Turn_kP) + (TurnDerivative * Turn_kD);
+    
+    // Application of motor powers 
+    leftFront.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
+    leftMid.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
+    leftBack.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
+    rightBack.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+    rightMid.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+    rightFront.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+
+    // re-assign the error as prevError and TurnPrevError for next cycle
+    prevError = error;
+    TurnPrevError = TurnError;
+
+    // Refresh time 20 milliseconds
+    task::sleep(20);
+  }
+  return 1;
+}
+
+
+
+
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
@@ -110,6 +221,7 @@ void pre_auton(void) {
 
 void autonomous(void) {
   Brain.Screen.clearScreen();
+  Controller1.Screen.clearLine(3);
   switch (runAuton){
     case 1:
       // code
@@ -120,32 +232,7 @@ void autonomous(void) {
       break;
 
     default:
-    
-      leftBack.setVelocity(40, pct);
-      leftFront.setVelocity(40, pct);
-      leftMid.setVelocity(40, pct);
-      rightBack.setVelocity(40, pct);
-      rightFront.setVelocity(40, pct);
-      rightMid.setVelocity(40, pct);
-
-      leftBack.spinFor(fwd, 2880, degrees, false);
-      leftFront.spinFor(fwd, 2880, degrees, false);
-      leftMid.spinFor(fwd, 2880, degrees, false);
-      rightBack.spinFor(fwd, 2880, degrees, false);
-      rightFront.spinFor(fwd, 2880, degrees, false);
-      rightMid.spinFor(fwd, 2880, degrees, true);
-      
-      //Cata.spin(fwd, true);
-
-      leftBack.spinFor(reverse, 1200, degrees, false);
-      leftFront.spinFor(reverse, 1200, degrees, false);
-      leftMid.spinFor(reverse, 1200, degrees, false);
-      rightBack.spinFor(reverse, 1200, degrees, false);
-      rightFront.spinFor(reverse, 1200, degrees, false);
-      rightMid.spinFor(reverse,1200, degrees, true);
-      
-  
-      //Brain.Screen.print("!!! No Auton Selected !!!");
+      Brain.Screen.print("!!! No Auton Selected !!!");
       break;
       
   }
@@ -154,12 +241,17 @@ void autonomous(void) {
 /*                              User Control Task                            */
 /*---------------------------------------------------------------------------*/
 
+
+
+
 void usercontrol(void) {
   // User control code here, inside the loop
+  controlON = false;
+  bool toggleEnabledWings = false; // two-choice toggle, so we use bool
+  bool buttonPressedWings = false; // logic variable
 
-  bool toggleEnabled = false; // two-choice toggle, so we use bool
-  bool buttonPressed = false; // logic variable
-
+  bool toggleEnabledCata = false; // two-choice toggle, so we use bool
+  bool buttonPressedCata = false; // logic variable
   while (1) {
 
     leftBack.setVelocity(100, pct);
@@ -182,32 +274,49 @@ void usercontrol(void) {
 
     // Button Assignment //
 
+    bool buttonL2 = Controller1.ButtonL2.pressing();
+
+    // Toggle Logic
+    if (buttonL2 && !buttonPressedCata){
+      buttonPressedCata = true; 
+      toggleEnabledCata = !toggleEnabledCata;
+    }
+    else if (!buttonL2) buttonPressedCata = false;
+
+    // Code For toggle Enabled or Disabled
+    if(toggleEnabledCata){
+      // Fire cata
+    } else{
+      // reset cata 
+    }
+
     // Catapult Motor Logic
     // when L2 is being pressed spin forward
     if(Controller1.ButtonL2.pressing()){
-      Cata.spin(fwd);
+      Cata.spin(fwd,100,pct);
 
       // when R2 is being pressed spin reverse
     }else if(Controller1.ButtonR2.pressing()){
-      Cata.spin(reverse);
+      Cata.spin(reverse,100,pct);
 
       // else stop
     }else{
       Cata.stop(hold);
     }
 
+
     // boolean to get if the button is pressed (true) or it isn't pressed (false)
     bool buttonL1 = Controller1.ButtonL1.pressing();
 
     // Toggle Logic
-    if (buttonL1 && !buttonPressed){
-      buttonPressed = true; 
-      toggleEnabled = !toggleEnabled;
+    if (buttonL1 && !buttonPressedWings){
+      buttonPressedWings = true; 
+      toggleEnabledWings = !toggleEnabledWings;
     }
-    else if (!buttonL1) buttonPressed = false;
+    else if (!buttonL1) buttonPressedWings = false;
 
     // Code For toggle Enabled or Disabled
-    if(toggleEnabled){
+    if(toggleEnabledWings){
       piston.set(true); // open wings
     } else{
       piston.set(false);// close wings
@@ -227,6 +336,9 @@ int main() {
   Competition.drivercontrol(usercontrol);
 
   Auton1.pressed(AutoBump); // When bumper is pressed it cycles through different autonomous 
+  
+  // When the limit switch is pressed it counts how many times it has gone off
+  cataCount.pressed(launchCount); 
 
   // Run the pre-autonomous function.
   pre_auton();

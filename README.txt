@@ -8,15 +8,9 @@ This is 255M first ever GitHub hosted folder
 
 The contents that are crustal for the Over Under Robot are:
 
-Drive_PD.cpp
-Drive_PD.h
----
-Call_Backs.cpp
-Call_Backs.h
----
 robot-config.cpp
 robot-config.h
---
+---
 main.cpp
 vex.h
 
@@ -33,5 +27,27 @@ The added benefit to GitHub is that there is version tracking so if something we
 the current version you can look back at previous ones. There is also blame tracking so if Alex, or I 
 wrote bad code our team could look at the blame page and see who committed what version. 
 
-Thats all for now 
--Lucas
+As of 11/28 - 11/29 2023 the changes are:
+
+PD Controller Fix - the .rotation(degrees) method for the inertial sensor did NOT have a capped limit
+as a result there is a limit
+
+Next steps: add a detector for left and right turns and tune the Controller
+
+/////
+
+Catapult limit switch additions - I have coded in the launchCount function 
+(counts how many times the limit switch has been pressed) and have setup the foundation for the catapult
+launch to be at the press of a button instead of holding it down.
+
+Minor additions - Commented the PD controller, general touchups 
+
+Plans:
+
+I would like the program to write the PD controller data (variables and numbers) to an SD
+card
+
+Add in ultrasonic/ distance sensors for more accurate setup/lineup during auto
+
+Add in auto selector
+

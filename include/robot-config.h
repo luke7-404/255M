@@ -18,6 +18,7 @@ extern rotation leftTrack;
 extern rotation rightTrack;
 extern motor rightMid;
 extern digital_out piston;
+extern limit cataCount;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
@@ -33,7 +34,6 @@ void  vexcodeInit( void );
 // extern potV2 PotentiometerV2A; // Potentiometer 
 // extern led LEDB; // __ LED
 // extern triport Expander13;
-// extern limit Auton1; // Limit Switch
 
 
 

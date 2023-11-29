@@ -22,6 +22,7 @@ inertial Inertial = inertial(PORT3);
 rotation leftTrack = rotation(PORT10, true);
 rotation rightTrack = rotation(PORT1, false);
 digital_out piston = digital_out(Brain.ThreeWirePort.D);
+limit cataCount = limit(Brain.ThreeWirePort.A);
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable
@@ -43,4 +44,3 @@ void vexcodeInit( void ) {
 // potV2 PotentiometerV2A = potV2(Brain.ThreeWirePort.A); // Potentiometer 
 // led LEDB = led(Brain.ThreeWirePort.B); // __ LED
 // triport Expander13 = triport(PORT13);
-// limit Auton1 = limit(Brain.ThreeWirePort.A); // Limit Switch
