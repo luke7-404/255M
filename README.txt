@@ -51,3 +51,56 @@ Add in ultrasonic/ distance sensors for more accurate setup/lineup during auto
 
 Add in auto selector
 
+////
+
+Nov 29 - 30
+
+Catapult has a counter and every time the limit switch is pressed then it will count (number is shown on 
+controller)
+
+Auton selector is up and running slight bugs will fix
+
+Minor amount of comments have been added
+
+PD Controller:
+
+- has to be tuned
+- Check if the controller can handle negative values (rotational especially)
+
+Motor temps are printed throughout various stages
+
+LEDs added for notification
+
+////
+
+Dec 2 - 3
+
+I've been wanting to utilize the micro sd card slot for a while and I started that project this weekend
+
+The outline of what I need to do is 
+
+Create the file
+Write data to it
+close it 
+repeat
+
+So far what has been completed is the first and last part
+When the program is ran the string function filename will run and it will name the file
+a long this format: Year-Month-day_Hour-minute-second
+This name format handles duplication because the position of second will change the rest of the filename
+the hour outputs in a 24 hour clock (or military time) so that it distinguishes between AM and PM
+
+The only times left are how to implement the creation, writing, and closing of the file
+There are multiple posts on Vex Forum that deal with these but I am having confusion deciphering them
+
+Other Changes:
+
+MASSIVE amounts of comments - anything that could've been commented is
+
+Layout - I've added spaces in between functions for separation purposes 
+
+Minor fixes to code that will get tested to make sure they were the correct fixes or where style changes
+
+If anything else was forgotten look at code changes
+
+

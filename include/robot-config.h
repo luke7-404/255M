@@ -18,7 +18,9 @@ extern rotation leftTrack;
 extern rotation rightTrack;
 extern motor rightMid;
 extern digital_out piston;
-extern limit cataCount;
+extern limit cataLimit;
+extern led LEDGreen;
+extern led LEDRed;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

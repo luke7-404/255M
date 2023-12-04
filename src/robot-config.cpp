@@ -17,13 +17,14 @@ motor rightBack = motor(PORT12, ratio6_1, true);
 motor rightMid = motor(PORT13, ratio6_1, false);
 motor rightFront = motor(PORT11, ratio6_1, false);
 motor Cata = motor(PORT8, ratio36_1, true);
-bumper Auton1 = bumper(Brain.ThreeWirePort.C);
-inertial Inertial = inertial(PORT3);
+bumper Auton1 = bumper(Brain.ThreeWirePort.B);
+inertial Inertial = inertial(PORT5);
 rotation leftTrack = rotation(PORT10, true);
 rotation rightTrack = rotation(PORT1, false);
-digital_out piston = digital_out(Brain.ThreeWirePort.D);
-limit cataCount = limit(Brain.ThreeWirePort.A);
-
+digital_out piston = digital_out(Brain.ThreeWirePort.A);
+limit cataLimit = limit(Brain.ThreeWirePort.C);
+led LEDGreen = led(Brain.ThreeWirePort.D);
+led LEDRed = led(Brain.ThreeWirePort.E);
 // VEXcode generated functions
 // define variable for remote controller enable/disable
 bool RemoteControlCodeEnabled = true;
