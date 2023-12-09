@@ -192,8 +192,8 @@ int targetDist = 0; // Goal distance (Lateral Movement)
 
 //* Rotational Variables
 // Gain variables - Deals with controller sensitivity (for turning)
-double Turn_kP = 0.66700000595; // turn error gain //0.71-0.69-0.67-.669-.6685-.6675-0.6671- 0.66705-0.667005-0.667000006-0.66700000595 //0.63-0.64-0.667-0.667000005-0.6670000059
-double Turn_kD = 0.7; // turn derivative gain //0.665 //7
+double Turn_kP = 0.66700000595; // turn error gain
+double Turn_kD = 0.7; // turn derivative gain
 
 double TurnError = 0; // the difference from where the goal is to where you are
 int TurnDerivative = 0; // the difference from current turn error and TurnPrevError
@@ -244,14 +244,12 @@ int PD_Control(){ // Declaration
     double InertPos = Inertial.rotation(degrees);
 
     // Adds a limit to the sensor so it doesn't go past 360
-    // if less than -180 it wraps to positive 180 and vice versa
-    if(fabs(InertPos) > 360 && fabs(InertPos) <= 361){
+    // if the absolute value of the float point number is in 
+    // between 360-361 then it sets it back to 0
+    if(fabs(InertPos) > 360 && fabs(InertPos) < 361){
       InertPos = 0;
-    } /*
-    else if (InertPos > 180){
-      InertPos = -180;
-    }
-    */
+    } 
+
     // Error: difference from target and current location
     TurnError = targetTurn - InertPos;  
 
@@ -356,33 +354,7 @@ void autonomous(void) {
   task drivePD(PD_Control); // starts the PD controller as a task
 
   // Depending on the number that runAuton holds that is the code ran
-  if (runAuton == 1){ // if 1 then...
-    // code
-    //targetDist = 800; // Moves the robot laterally for 800 units 
-    /*
-    leftBack.setVelocity(40, pct);
-     leftFront.setVelocity(40, pct);
-    leftMid.setVelocity(40, pct);
-    rightBack.setVelocity(40, pct);
-    rightFront.setVelocity(40, pct);
-    rightMid.setVelocity(40, pct);
-
-    leftBack.spinFor(fwd, 2880, degrees, false);
-    leftFront.spinFor(fwd, 2880, degrees, false);
-    leftMid.spinFor(fwd, 2880, degrees, false);
-    rightBack.spinFor(fwd, 2880, degrees, false);
-    rightFront.spinFor(fwd, 2880, degrees, false);
-    rightMid.spinFor(fwd, 2880, degrees, true);
-
-    //Cata.spin(fwd, true);
-
-    leftBack.spinFor(reverse, 1200, degrees, false);
-    leftFront.spinFor(reverse, 1200, degrees, false);
-    leftMid.spinFor(reverse, 1200, degrees, false);
-    rightBack.spinFor(reverse, 1200, degrees, false);
-    rightFront.spinFor(reverse, 1200, degrees, false);
-    rightMid.spinFor(reverse,1200, degrees, true);
-    */
+  if (runAuton == 1){ // if 1 then (for now) will run the autonomous skills code    
     LEDGreen.on();
     targetDist= -2400;
     wait(1,sec);
@@ -397,7 +369,7 @@ void autonomous(void) {
     LEDRed.on();
     LEDGreen.off();
     Cata.stop(coast);
-  } else if (runAuton == 2){ // if 2 then...
+  } else if (runAuton == 2){ // if 2 then nothing for now
     // code
 
   
@@ -455,13 +427,13 @@ void usercontrol(void) {
 
   while (1) {
     
-
+    // gets the average of all 7 motor temps
     int motorTempAvg = (leftFront.temperature(pct) + leftMid.temperature(pct) + leftBack.temperature(pct) + rightBack.temperature(pct)
                        + rightMid.temperature(pct) + rightFront.temperature(pct) + Cata.temperature(pct))/7;
-
+    // if the average is less than 50 the words on the screen will be blue
     if (motorTempAvg < 50){
       Brain.Screen.setPenColor("#769CBC"); // sets the color of the text for indication
-    } else {
+    } else { // otherwise the words on the screen will be orange/ tan
       Brain.Screen.setPenColor("#F1B04C"); // sets the color of the text for indication
     }
 
