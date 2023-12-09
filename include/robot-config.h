@@ -12,7 +12,7 @@ extern motor rightBack;
 extern motor rightMid;
 extern motor rightFront;
 extern motor Cata;
-extern bumper Auton1;
+extern limit Auton1;
 extern inertial Inertial;
 extern rotation leftTrack;
 extern rotation rightTrack;
