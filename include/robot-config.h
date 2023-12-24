@@ -4,7 +4,6 @@ extern brain Brain;
 
 // VEXcode devices
 extern controller Controller1;
-extern controller Controller2;
 extern motor leftBack;
 extern motor leftMid;
 extern motor leftFront;
@@ -12,15 +11,19 @@ extern motor rightBack;
 extern motor rightMid;
 extern motor rightFront;
 extern motor Cata;
+extern motor Intake;
 extern limit Auton1;
 extern inertial Inertial;
 extern rotation leftTrack;
 extern rotation rightTrack;
 extern motor rightMid;
 extern digital_out piston;
+extern digital_out extendIntake;
 extern limit cataLimit;
 extern led LEDGreen;
 extern led LEDRed;
+extern distance sideX;
+extern distance sideY;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

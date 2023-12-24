@@ -27,8 +27,9 @@
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "sstream" // Used to control strings
-#include "vex.h"
+#include "vex.h" // Vex's included class to be able to interact with vex objects
 #include "iostream" // Needed to output items to a computer
+#include "fstream" // Utilized so that data can print to a file
 
 
 using namespace vex;
@@ -48,8 +49,33 @@ competition Competition;
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
 
+uint8_t myTestData[ 1000 ];
+char buffer[50];
 
 
+std::string fileMake(void){
+  std::string fileNew;
+
+  for(int i = 0; i<1000;i++){
+    std::stringstream temp;
+    temp << "dataFile_" << i << ".txt";
+    fileNew = temp.str();
+
+    if( !(Brain.SDcard.exists(fileNew.c_str())) ){
+      std::cout << "Making new file: " << fileNew << std::endl; 
+      
+      break;
+    } else {
+      std::cout << fileNew << " exists" << std::endl;
+
+      continue;
+    }
+    fileNew.clear();
+  }
+
+  
+  return fileNew;
+}
 
 
 
@@ -62,10 +88,12 @@ int launched = 0;
 // Counts the number of time the limit switch has been pressed
 void launchCount(){
   launched++; // Adds one to the number of times the button has been pressed
-  
-  // Update number on controller
+
+  // Update number on controller:
   Controller1.Screen.clearLine(3); // Clear line
   Controller1.Screen.print("Count %d", launched); // change number
+  
+  
 }
 
 
@@ -323,6 +351,8 @@ void pre_auton(void) {
   LEDGreen.off();
   LEDRed.off();
 
+  
+
 }
 
 
@@ -353,37 +383,33 @@ void autonomous(void) {
 
   task drivePD(PD_Control); // starts the PD controller as a task
 
+  extendIntake.set(true); // Extends the intake out
+
   // Depending on the number that runAuton holds that is the code ran
   if (runAuton == 1){ // if 1 then (for now) will run the autonomous skills code    
     LEDGreen.on();
-    targetDist= -2400;
-    wait(1,sec);
-    LEDGreen.off();
-    LEDRed.on();
-    targetTurn = 45;
-    wait(1,sec);
-    LEDRed.off();
-    LEDGreen.on();
-    Cata.spin(fwd, 75, pct);
-    waitUntil(launched == 54);
-    LEDRed.on();
-    LEDGreen.off();
-    Cata.stop(coast);
+    //targetTurn = -130;
+    targetDist = 2300; //1125
+    wait(1.5, sec);
+    targetDist = 500;
   } else if (runAuton == 2){ // if 2 then nothing for now
     // code
 
   
   } else if(runAuton == 3){ // if 3 then Skills Auton will run for autonomous
     LEDGreen.on();
-    targetDist= -2400;
+    targetDist= -2000; //-2400
     wait(1,sec);
     LEDGreen.off();
     LEDRed.on();
-    targetTurn = 45;
+    targetTurn = -30;
     wait(1,sec);
     LEDRed.off();
     LEDGreen.on();
-    Cata.spin(fwd, 75, pct);
+    wait(1.5, sec);
+    resetSens = true;
+    targetDist=-300;
+    Cata.spin(fwd, 80, pct);
     waitUntil(launched == 54);
     LEDRed.on();
     LEDGreen.off();
@@ -427,9 +453,11 @@ void usercontrol(void) {
 
   while (1) {
     
+
     // gets the average of all 7 motor temps
     int motorTempAvg = (leftFront.temperature(pct) + leftMid.temperature(pct) + leftBack.temperature(pct) + rightBack.temperature(pct)
                        + rightMid.temperature(pct) + rightFront.temperature(pct) + Cata.temperature(pct))/7;
+    
     // if the average is less than 50 the words on the screen will be blue
     if (motorTempAvg < 50){
       Brain.Screen.setPenColor("#769CBC"); // sets the color of the text for indication
@@ -487,18 +515,13 @@ void usercontrol(void) {
     // Code For toggle Enabled or Disabled
     if(toggleEnabledCata){
       LEDRed.on();
-      Cata.spin(fwd); // Spins Cata on a toggle if it needs to be on for longer
+      Cata.spin(fwd, 80, pct); // Spins Cata on a toggle if it needs to be on for longer
     } 
 
     // Manual Input
     // when L2 is being pressed spin forward
     else if(Controller1.ButtonL2.pressing()) {
-      Cata.spin(fwd);
-    } 
-    // when R2 is being pressed spin reverse
-    else if(Controller1.ButtonR2.pressing()){
-      Cata.spin(reverse,100,pct);
-
+      Cata.spin(fwd, 80, pct); //100
     } else{
       LEDRed.off();
       Cata.stop(coast); // else stop
@@ -508,14 +531,14 @@ void usercontrol(void) {
 
     // Wings/ blockers Logic
     // boolean to get if the button is pressed (true) or it isn't pressed (false)
-    bool buttonL1 = Controller1.ButtonL1.pressing();
+    bool buttonX = Controller1.ButtonX.pressing();
 
     // Toggle Logic
-    if (buttonL1 && !buttonPressedWings){
+    if (buttonX && !buttonPressedWings){
       buttonPressedWings = true; 
       toggleEnabledWings = !toggleEnabledWings;
     }
-    else if (!buttonL1) buttonPressedWings = false;
+    else if (!buttonX) buttonPressedWings = false;
 
     // Code For toggle Enabled or Disabled
     if(toggleEnabledWings){
@@ -523,7 +546,11 @@ void usercontrol(void) {
 
     } else piston.set(false); // close wings
 
-
+    if(Controller1.ButtonL1.pressing()){
+      Intake.spin(fwd, 100, pct);
+    } else if (Controller1.ButtonR1.pressing()) {
+      Intake.spin(reverse, 100, pct);
+    } else Intake.stop(coast);
 
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
@@ -544,6 +571,14 @@ int main() {
   
   // When the limit switch is pressed it counts how many times it has gone off
   cataLimit.pressed(launchCount); 
+
+  if(Brain.SDcard.isInserted()){
+    std::string fileName = fileMake();
+
+    Brain.SDcard.savefile(fileName.c_str(), myTestData, sizeof(myTestData));
+    std::sprintf(buffer,"File name %s", fileName.c_str()); 
+    Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+  }
 
   // Run the pre-autonomous function.
   pre_auton();
