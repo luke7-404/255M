@@ -319,6 +319,53 @@ int PD_Control(){ // Declaration
 
 
 
+void placeCheck(void){
+  int xPos;
+  int yPos;
+  bool checkX = false;
+  bool checkY = false;
+  int inputX = sideX.objectDistance(mm); 
+  int inputY = sideY.objectDistance(mm);
+
+  if(runAuton == 1){
+    xPos = 90;
+    yPos = 1480;
+    checkX = (inputX >= xPos) && (inputX < xPos+3);
+    checkY = (inputY >= yPos) && (inputY < yPos+6);
+  } else if (runAuton == 2){
+    xPos = 0;
+    yPos = 0;
+  } else if (runAuton == 3){
+    xPos = 0;
+    yPos = 302;
+    checkX = true;
+    checkY = (inputY >= yPos) && (inputY > yPos+5);
+  }
+  
+  
+  Brain.Screen.clearScreen();
+
+  
+
+  while ( !(checkX && checkY)){
+    Brain.Screen.printAt(0, 20, "Move bot %d horizontally", inputX);
+    Brain.Screen.printAt(0, 40, "Move bot %d vertically", inputY);
+    std::cout<< inputX << " , " << inputY <<std::endl;
+    inputX = sideX.objectDistance(mm); 
+    inputY = sideY.objectDistance(mm);
+    if(checkX && checkY){
+      Brain.Screen.printAt(0, 20, "Move bot %d horizontally", inputX);
+      Brain.Screen.printAt(0, 40, "Move bot %d vertically", inputY);
+      std::cout<< "Finished at: " <<inputX << " , " << inputY <<std::endl;
+      break;
+    }
+  }
+}
+
+
+
+
+
 
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
@@ -351,7 +398,12 @@ void pre_auton(void) {
   LEDGreen.off();
   LEDRed.off();
 
+  bool periodCheck = vex::competition::isAutonomous && vex::competition::isDriverControl;
+  bool statusCheck = vex::competition::isEnabled;
   
+  do{
+    placeCheck();
+  } while(!(periodCheck && statusCheck));
 
 }
 
