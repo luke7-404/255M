@@ -347,9 +347,6 @@ int PD_Control(void){ // Declaration of the integer type function
       std::sprintf(buffer,"Lat Deriv: %d | Rot Deriv: %d\n", derivative, TurnDerivative);
       Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
 
-      std::sprintf(buffer,"Lat error: %d | Rot error: %d\n", error, TurnError);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
       std::sprintf(buffer,"Lat PrevE: %d | Rot PrevE: %d\n", prevError, TurnPrevError);
       Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
 
@@ -396,8 +393,8 @@ void placeCheck(void){
   
   // Declare variables xPos and yPos to store 
   // the X and Y positions of the object
-  int xPos;
-  int yPos;
+  int xPos = 0;
+  int yPos = 0;
 
   // Declare boolean variables checkX and checkY to check if the 
   // object is within a certain range in the X and Y directions
@@ -514,11 +511,11 @@ void pre_auton(void) {
   // Retains the status of the current mode the competition match is in,
   // if it is neither in autonomous nor driver control then that is a
   // sign that the mode is pre-auton 
-  bool periodCheck = vex::competition::isAutonomous && vex::competition::isDriverControl;
+  bool periodCheck = Competition.isAutonomous() && Competition.isDriverControl();
 
   // if the status of the controller is disabled (false) that is 
   // another sign that the robot is in pre-auton
-  bool statusCheck = vex::competition::isEnabled;
+  bool statusCheck = Competition.isEnabled();
   
   // While the code detects that the period is in pre-auton, 
   // it calls the function placeCheck
