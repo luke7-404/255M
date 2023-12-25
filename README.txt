@@ -103,4 +103,19 @@ Minor fixes to code that will get tested to make sure they were the correct fixe
 
 If anything else was forgotten look at code changes
 
+///
+
+DEC 24-25
+
+First commit : Wrote the file naming function
+Second commit : Wrote a function that lets the person that sets up the robot know the distance from the set up spot
+
+Third commit : Added comments to all uncommented things along with other minor changes
+
+Future plans:
+
+ - Add GPS capabilities 
+ - Tie in everything together (distance sensors, file/ data collection, GPS, PD control)
+ - Other auton layouts/ routes
+
 
