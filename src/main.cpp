@@ -148,40 +148,51 @@ void AutoSwitch(void){
   LEDGreen.off(); 
   LEDRed.off();
 
-  if (runAuton == 0){ // If 0, Red LED turns on and indicates no auton has been selected
-    Brain.Screen.setPenColor("#E60026"); // sets the color of the text for indication
-    Brain.Screen.printAt(0, 20, "!!! NO Auton selected !!!"); // print on the screen
-    Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
-    LEDRed.on();
+  /*
+    Checks the value of runAuton and displays messages on the screen that 
+    shows what the number correlates to. Additionally, turning on/off 
+    LEDs and changing the color of the text for better indication
+  */
 
-  } else if (runAuton == 1){ // If 1, Green LED turns on and says Auton 1 has been selected
-    Brain.Screen.setPenColor("#39FF14"); // sets the color of the text for indication
-    Brain.Screen.printAt(0, 20, "Auton %d has been selected", runAuton); // print on the screen
+  if (runAuton == 0){ 
+    Brain.Screen.setPenColor("#E60026"); // sets the color of the text to red
+    Brain.Screen.printAt(0, 20, "!!! NO Auton selected !!!"); // 0 = No auton
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
+    LEDRed.on(); // LED indication
+
+  } else if (runAuton == 1){
+    Brain.Screen.setPenColor("#39FF14"); // sets the color of the text to green
+    Brain.Screen.printAt(0, 20, "Auton %d has been selected", runAuton); // 1 = 1st auton
+    Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
+
+    // LED indication
     LEDGreen.off();
     wait(0.5, sec);
     LEDGreen.on();
 
-  } else if (runAuton == 2){ // If 2, Green LED turns on and says Auton 2 has been selected
-    Brain.Screen.setPenColor("#C5E90B"); // sets the color of the text for indication
-    Brain.Screen.printAt(0, 20, "Auton %d has been selected", runAuton); // print on the screen
+  } else if (runAuton == 2){
+    Brain.Screen.setPenColor("#C5E90B"); // sets the color of the text to a yellow-green
+    Brain.Screen.printAt(0, 20, "Auton %d has been selected", runAuton); // 2 = 2nd Auton
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white 
+
+    // LED indication
     LEDGreen.off();
     wait(0.5, sec);
     LEDGreen.on();
 
-  } else if (runAuton == 3){ // If 3, the Green and Red LEDs turn on and 
-                             // says Skills Auton has been selected
-    Brain.Screen.setPenColor("#00B3CA"); // sets the color of the text for indication
-    Brain.Screen.printAt(0, 20, "Skills Auton has been selected (%d)", runAuton); // print on the screen
+  } else if (runAuton == 3){
+    Brain.Screen.setPenColor("#00B3CA"); // sets the color of the text to blue
+    Brain.Screen.printAt(0, 20, "Skills Auton has been selected (%d)", runAuton); // 3 = Skills Auto
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
+
+    // LED indication
     LEDGreen.on();
     LEDRed.on();
   }else { // if there's an error then it prints the number it gets too
-    Brain.Screen.setPenColor("#E60026"); // sets the color of the text for indication
-    Brain.Screen.print("ERROR, NUMBER AT: %d", runAuton); // print on the screen
+    Brain.Screen.setPenColor("#E60026"); // sets the color of the text to red 
+    Brain.Screen.print("ERROR, NUMBER AT: %d", runAuton); // print the error number
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
-    LEDRed.on();
+    LEDRed.on(); // LED indication
   }
 }
 
@@ -271,7 +282,7 @@ int PD_Control(void){ // Declaration of the integer type function
     int leftPos = leftTrack.position(degrees);
     int rightPos = rightTrack.position(degrees);
 
-    // the average between both sides 
+    // Calculate and store the average between both sides in an integer variable 
     int avg = (leftPos + rightPos)/2;
 
     error = targetDist - avg; // the difference of target and current location
@@ -393,18 +404,15 @@ void placeCheck(void){
   
   // Declare variables xPos and yPos to store 
   // the X and Y positions of the object
-  int xPos = 0;
-  int yPos = 0;
+  int xPos = 0, yPos = 0;
 
   // Declare boolean variables checkX and checkY to check if the 
   // object is within a certain range in the X and Y directions
-  bool checkX = false;
-  bool checkY = false;
+  bool checkX = false, checkY = false;
 
   // Use the sideX and sideY distance sensors to get the distance to the  
   // object in millimeters and store them in inputX and inputY variables
-  int inputX = sideX.objectDistance(mm); 
-  int inputY = sideY.objectDistance(mm);
+  int inputX = sideX.objectDistance(mm), inputY = sideY.objectDistance(mm);
 
   // If runAuton is equal to 1 set xPos to 90 and yPos to 1480
   if(runAuton == 1){
@@ -436,7 +444,7 @@ void placeCheck(void){
 
   // Calculate the difference between where the robot 
   // is supposed to be and where the robot is
-  int diffX = xPos - inputX; 
+  int diffX = xPos - inputX;
   int diffY = yPos - inputY;
 
   Brain.Screen.clearScreen(); // Clear the screen of the Brain device
@@ -654,8 +662,19 @@ void usercontrol(void) {
     // Capture the current time from the brain's timer in seconds (type declaration)
     int elapsedTime = Brain.Timer.value();  
 
-    // Toggle the onCooldown boolean every 15 seconds
-    if (elapsedTime % 15 == 0) onCooldown = !onCooldown;
+    // turn on the onCooldown boolean every 15 seconds
+    if (elapsedTime % 15 == 0) {
+
+      onCooldown = true; 
+
+      // prints the elapsed time and onCooldown bool for debugging
+      std::cout << elapsedTime << onCooldown << std::endl; 
+
+    } else { // if not an interval of 15 turn off cooldown
+
+      onCooldown = false;
+      std::cout << elapsedTime << std::endl; // prints the elapsed time
+    }
 
     /* If the SD card is inserted, the file has been created, and the system is on cooldown,
       format a message with the average motor temperature and elapsed time, and write it 
