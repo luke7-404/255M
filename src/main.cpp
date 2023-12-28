@@ -93,10 +93,42 @@ std::string fileMake(void){
 
 
 
+double lfe, rfe, lme, rme,lbe, rbe, cataEff, intakeEff;
+
+void motorData(void){
+
+  lfe = leftFront.efficiency(pct);
+  rfe = rightFront.efficiency(pct);
+  lme = leftMid.efficiency(pct);
+  rme = rightMid.efficiency(pct);
+  lbe = leftBack.efficiency(pct);
+  rbe = rightBack.efficiency(pct);
+  cataEff = Cata.efficiency(pct);
+  intakeEff = Intake.efficiency(pct);
+
+  std::sprintf(buffer,"Left Front eff: %.4f | Right Front eff: %.4f\n", lfe, rfe);
+  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+
+  std::sprintf(buffer,"Left Mid eff: %.4f | Right Mid eff: %.4f\n", lme, rme);
+  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+
+  std::sprintf(buffer,"Left Back eff: %.4f | Right Back eff: %.4f\n", lbe, rbe);
+  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+
+  std::sprintf(buffer,"Cata eff: %.4f | Intake eff: %.4f\n\n\n", cataEff, intakeEff);
+  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+}
+
+
+
+
 
 
 // inital number of times the limit switch is pressed
 int launched = 0;
+
+// Data collection
+int totalElapsedTime;
 
 // Counts the number of time the limit switch has been pressed
 void launchCount(void){
@@ -108,8 +140,9 @@ void launchCount(void){
   
   // when the card is inserted and the file has been created then the code enters the if statement
   if(cardInserted && createdNameExists){
+    totalElapsedTime = Brain.Timer.value();
     // stores the data into the buffer character array using printf commands
-    std::sprintf(buffer,"Launch Count: %d\n", launched);
+    std::sprintf(buffer,"Launch Count: %d | At %d Seconds\n\n\n", launched, totalElapsedTime);
     // Appends the data to the active file
     Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
   }
@@ -121,13 +154,12 @@ void launchCount(void){
 
 
 
-
-
 // Inital number of times the Auton selector switch has been pressed
 int runAuton = 0;
 
 // Changes which Auton is run 
 void AutoSwitch(void){
+  
   
   // Limit so that runAuton does not keep adding
   // starts at 0 and is capped at 2 so that the total numbers are 3
@@ -148,6 +180,7 @@ void AutoSwitch(void){
   LEDGreen.off(); 
   LEDRed.off();
 
+  
   /*
     Checks the value of runAuton and displays messages on the screen that 
     shows what the number correlates to. Additionally, turning on/off 
@@ -156,13 +189,13 @@ void AutoSwitch(void){
 
   if (runAuton == 0){ 
     Brain.Screen.setPenColor("#E60026"); // sets the color of the text to red
-    Brain.Screen.printAt(0, 20, "!!! NO Auton selected !!!"); // 0 = No auton
+    Brain.Screen.printAt(6, 20, "!!! NO Auton selected !!!"); // 0 = No auton
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
     LEDRed.on(); // LED indication
 
   } else if (runAuton == 1){
     Brain.Screen.setPenColor("#39FF14"); // sets the color of the text to green
-    Brain.Screen.printAt(0, 20, "Auton %d has been selected", runAuton); // 1 = 1st auton
+    Brain.Screen.printAt(6, 20, "Auton %d has been selected", runAuton); // 1 = 1st auton
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
 
     // LED indication
@@ -172,7 +205,7 @@ void AutoSwitch(void){
 
   } else if (runAuton == 2){
     Brain.Screen.setPenColor("#C5E90B"); // sets the color of the text to a yellow-green
-    Brain.Screen.printAt(0, 20, "Auton %d has been selected", runAuton); // 2 = 2nd Auton
+    Brain.Screen.printAt(6, 20, "Auton %d has been selected", runAuton); // 2 = 2nd Auton
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white 
 
     // LED indication
@@ -182,18 +215,20 @@ void AutoSwitch(void){
 
   } else if (runAuton == 3){
     Brain.Screen.setPenColor("#00B3CA"); // sets the color of the text to blue
-    Brain.Screen.printAt(0, 20, "Skills Auton has been selected (%d)", runAuton); // 3 = Skills Auto
+    Brain.Screen.printAt(6, 20, "Skills Auton has been selected (%d)", runAuton); // 3 = Skills Auto
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
 
     // LED indication
     LEDGreen.on();
     LEDRed.on();
+
   }else { // if there's an error then it prints the number it gets too
     Brain.Screen.setPenColor("#E60026"); // sets the color of the text to red 
     Brain.Screen.print("ERROR, NUMBER AT: %d", runAuton); // print the error number
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
     LEDRed.on(); // LED indication
   }
+
 }
 
 
@@ -219,7 +254,7 @@ void calibrateInertial(void){
 
   // Print on brain and controller Screen done
   Controller1.Screen.print("Done");
-  Brain.Screen.printAt(0, 20, "Done");
+  Brain.Screen.printAt(6, 20, "Done");
 
   // Vibrates the controller to indicate calibration has finished
   Controller1.rumble("..");
@@ -263,6 +298,7 @@ double targetTurn = 0; // Goal Distance (Rotational Movement)
 bool controlON = true; // Toggles the while loop for the controller
 bool resetSens = false; // Toggles if the sensors are reset to 0
 
+
 int PD_Control(void){ // Declaration of the integer type function
   while(controlON){ // while loop for the controller (Needed to update values)
 
@@ -287,12 +323,12 @@ int PD_Control(void){ // Declaration of the integer type function
 
     error = targetDist - avg; // the difference of target and current location
 
-    Brain.Screen.printAt(0, 60, "Error %d", error);
-    Brain.Screen.printAt(0, 80, "Avg Position %d", avg);
+    Brain.Screen.printAt(6, 60, "Error %d", error);
+    Brain.Screen.printAt(6, 80, "Avg Position %d", avg);
 
     derivative = error - prevError; // derivative
 
-    Brain.Screen.printAt(0, 100, "Prev Error %d", prevError);
+    Brain.Screen.printAt(6, 100, "Prev Error %d", prevError);
 
     // Lateral(Lat) Motor(Mtr) Power(Pwr) equation
     double LatMtrPwr = (error * kP)+(derivative * kD); 
@@ -305,7 +341,7 @@ int PD_Control(void){ // Declaration of the integer type function
     // Adds a limit to the sensor so it doesn't go past 360
     // if the absolute value of the float point number is in 
     // between 360-361 then it sets it back to 0
-    if(fabs(InertPos) > 360 && fabs(InertPos) < 361){
+    if(fabs(InertPos) > 360 && fabs(InertPos) < 361.5){
       InertPos = 0;
     } 
 
@@ -313,13 +349,13 @@ int PD_Control(void){ // Declaration of the integer type function
     TurnError = targetTurn - InertPos;  
 
     // Print Values to debug when needed
-    Brain.Screen.printAt(0, 140, "Turn Error %f", TurnError);
-    Brain.Screen.printAt(0, 160, "Inertial Position %f", InertPos);
+    Brain.Screen.printAt(6, 140, "Turn Error %f", TurnError);
+    Brain.Screen.printAt(6, 160, "Inertial Position %f", InertPos);
     
     TurnDerivative = TurnError - TurnPrevError; // derivative
     
     // Print Value to debug when needed
-    Brain.Screen.printAt(0, 180, "Turn Prev Error %f", TurnPrevError);
+    Brain.Screen.printAt(6, 180, "Turn Prev Error %f", TurnPrevError);
 
     
     // Rotational(Rot) Motor(Mtr) Power(Pwr) equation
@@ -339,6 +375,7 @@ int PD_Control(void){ // Declaration of the integer type function
      if an SD card is inserted and a created name exists the function will write data onto a file
 
      The data includes:
+     - Time since program start
      - average lateral position and rotation position (inertial sensor value)
      - lateral error and rotation error 
      - lateral derivative and rotation derivative 
@@ -348,7 +385,12 @@ int PD_Control(void){ // Declaration of the integer type function
     */
 
     if (cardInserted && createdNameExists){
+
+      totalElapsedTime = Brain.Timer.value();
       
+      std::sprintf(buffer,"Data Collection at %d Seconds:\n\n", totalElapsedTime);
+      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+
       std::sprintf(buffer,"Lat avg: %d | Rot pos: %.4f\n", avg, floorf(InertPos * 10000) / 10000);
       Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
 
@@ -367,21 +409,9 @@ int PD_Control(void){ // Declaration of the integer type function
       std::sprintf(buffer,"LatMtrPwr: %.4f | RotMtrPwr: %.4f\n\n\n", flooredLMP, flooredRMP);
       Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
 
-      double lfe = leftFront.efficiency(pct);
-      double rfe = rightFront.efficiency(pct);
-      double lme = leftMid.efficiency(pct);
-      double rme = rightMid.efficiency(pct);
-      double lbe = leftBack.efficiency(pct);
-      double rbe = rightBack.efficiency(pct);
-
-      std::sprintf(buffer,"Left Front eff: %.4f | Right Front eff: %.4f\n", lfe, rfe);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      std::sprintf(buffer,"Left Mid eff: %.4f | Right Mid eff: %.4f\n", lme, rme);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      std::sprintf(buffer,"Left Back eff: %.4f | Right Back eff: %.4f\n", lbe, rbe);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+      // This is a function call that writes the motor 
+      // data such as motor efficiency to the SD card
+      motorData(); 
     }
 
     // re-assign the error as prevError and TurnPrevError for next cycle
@@ -400,89 +430,6 @@ int PD_Control(void){ // Declaration of the integer type function
 
 
 
-void placeCheck(void){
-  
-  // Declare variables xPos and yPos to store 
-  // the X and Y positions of the object
-  int xPos = 0, yPos = 0;
-
-  // Declare boolean variables checkX and checkY to check if the 
-  // object is within a certain range in the X and Y directions
-  bool checkX = false, checkY = false;
-
-  // Use the sideX and sideY distance sensors to get the distance to the  
-  // object in millimeters and store them in inputX and inputY variables
-  int inputX = sideX.objectDistance(mm), inputY = sideY.objectDistance(mm);
-
-  // If runAuton is equal to 1 set xPos to 90 and yPos to 1480
-  if(runAuton == 1){
-    xPos = 90;
-    yPos = 1480;
-
-    /* assigning checkX and checkY to true if the inputX is 
-     within the range of xPos to xPos+3 and if the inputY 
-     is within the range of yPos to yPos+6
-    */
-    checkX = (inputX >= xPos) && (inputX < xPos+3);
-    checkY = (inputY >= yPos) && (inputY < yPos+6);
-
-  // If runAuton is equal to 2 set xPos to 0 and yPos to 0 (there is no set auton yet...)  
-  } else if (runAuton == 2){
-    xPos = 0;
-    yPos = 0;
-
-  // If runAuton is equal to 3 set xPos to 0 (No xPos measured) and yPos to 302
-  } else if (runAuton == 3){
-    xPos = 0;
-    yPos = 302;
-
-    // It sets the value of checkX to true (No xPos measured) and checkY checks if
-    // inputY is greater than or equal to yPos and inputY is greater than yPos+5
-    checkX = true;
-    checkY = (inputY >= yPos) && (inputY > yPos+5);
-  }
-
-  // Calculate the difference between where the robot 
-  // is supposed to be and where the robot is
-  int diffX = xPos - inputX;
-  int diffY = yPos - inputY;
-
-  Brain.Screen.clearScreen(); // Clear the screen of the Brain device
-
-  // Enter a while loop that continues until both checkX and checkY are true
-  while ( !(checkX && checkY)){
-
-    //Print the values of diffX and diffY on the Brain screen
-    Brain.Screen.printAt(0, 20, "Move bot %d horizontally", diffX);
-    Brain.Screen.printAt(0, 40, "Move bot %d vertically", diffY);
-
-    // Print the values of diffX and diffY on the console (Used to debug)
-    std::cout<< inputX << " , " << inputY <<std::endl;
-    
-    // Update the values of inputX and inputY
-    inputX = sideX.objectDistance(mm); 
-    inputY = sideY.objectDistance(mm);
-
-    // If both checkX and checkY are at the correct 
-    // positions(true), break out of the while loop
-    if(checkX && checkY){
-
-      // print the values of diffX and diffY on the Brain screen and console
-      Brain.Screen.printAt(0, 20, "Set up completed: %d distance", diffX);
-      Brain.Screen.printAt(0, 40, "Set up completed: %d distance", diffY);
-      std::cout<< "Finished at: " <<inputX << " , " << inputY <<std::endl; // Used to debug
-
-      break; // exit the loop
-    }
-
-    wait(20, msec); // save CPU resources
-  }
-}
-
-
-
-
-
 
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
@@ -496,15 +443,15 @@ void pre_auton(void) {
   // Pre-Match motor temps
 
   // Left side
-  Brain.Screen.printAt(0, 60, "LF Motor Temp %f", leftFront.temperature(pct));
-  Brain.Screen.printAt(0, 80, "LM Motor Temp %f", leftMid.temperature(pct));
-  Brain.Screen.printAt(0, 100, "LB Motor Temp %f", leftBack.temperature(pct));
+  Brain.Screen.printAt(6, 100, "LF Motor Temp %f", leftFront.temperature(pct));
+  Brain.Screen.printAt(6, 120, "LM Motor Temp %f", leftMid.temperature(pct));
+  Brain.Screen.printAt(6, 140, "LB Motor Temp %f", leftBack.temperature(pct));
   // right side
-  Brain.Screen.printAt(0, 140, "RB Motor Temp %f", rightBack.temperature(pct));
-  Brain.Screen.printAt(0, 160, "RM Motor Temp %f", rightMid.temperature(pct));
-  Brain.Screen.printAt(0, 180, "RF Motor Temp %f", rightFront.temperature(pct));
+  Brain.Screen.printAt(6, 160, "RB Motor Temp %f", rightBack.temperature(pct));
+  Brain.Screen.printAt(6, 180, "RM Motor Temp %f", rightMid.temperature(pct));
+  Brain.Screen.printAt(6, 200, "RF Motor Temp %f", rightFront.temperature(pct));
   // catapult
-  Brain.Screen.printAt(0, 220, "Cata Motor Temp %f", Cata.temperature(pct));
+  Brain.Screen.printAt(6, 220, "Cata Motor Temp %f", Cata.temperature(pct));
   
   // resets the position to 0
   rightTrack.setPosition(0, degrees); 
@@ -515,22 +462,105 @@ void pre_auton(void) {
   LEDGreen.off();
   LEDRed.off();
 
-
-  // Retains the status of the current mode the competition match is in,
-  // if it is neither in autonomous nor driver control then that is a
-  // sign that the mode is pre-auton 
-  bool periodCheck = Competition.isAutonomous() && Competition.isDriverControl();
-
-  // if the status of the controller is disabled (false) that is 
-  // another sign that the robot is in pre-auton
-  bool statusCheck = Competition.isEnabled();
+  Brain.Screen.clearLine(1);
   
-  // While the code detects that the period is in pre-auton, 
-  // it calls the function placeCheck
-  do{
-    placeCheck();
-    wait(20, msec); // Saves CPU resources
-  } while(!(periodCheck && statusCheck)); // Condition check
+  Brain.Screen.setPenColor("#E60026"); // sets the color of the text to red
+  Brain.Screen.printAt(6, 20, "!!! NO Auton selected !!!"); // 0 = No auton
+  Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
+  LEDRed.on(); // LED indication
+  
+  // Checks if the game state is enabled and in Driver Control or Autonomous
+  // When the state is not enabled the positioning loop will run 
+  if(!Competition.isEnabled()){
+
+
+    /* Declare integer variable arrays xPos and yPos to  
+     store the X and Y positions (in Millimeters) 
+     The numbers were determined through testing 
+     starting positions.
+    */
+    int xPos[3] = {90, 0, 0};
+    int yPos[3] = {1480, 0, 302};
+
+    /*
+    xPos[0] and yPos[0] = 1st Auton setup
+    xPos[1] and yPos[1] = 2nd Auton setup
+    xPos[2] and yPos[2] = Skills Auton setup
+    */
+
+    // Use the distance sensors, sideX and sideY, to get the distance to the  
+    // perimeters in millimeters and store them in inputX and inputY variables
+    int inputX = sideX.objectDistance(mm); 
+    int inputY = sideY.objectDistance(mm);
+
+    // Initialization of the integer variables diffX and diffY
+    // These will hold the difference of a position and the input
+    // Side respective
+    int diffX, diffY;
+    
+    // While the input of X and Y do NOT equal the predetermined 
+    // numbers then the code will loop until it does
+    // since arrays are indexed starting at 0 we need to subtract 1
+    // runAuton = 1 | calculate positions 1-1 = 0: refer to line 486
+    while ((inputX != xPos[runAuton-1]) && (inputY != yPos[runAuton-1])){
+      
+      // Since Auton 2 is not actively used it breaks out 
+      // of the loop when runAuton = 2
+      if (runAuton == 2) {
+        Brain.Screen.printAt(6, 40, "Set up completed: 0 distance");
+        Brain.Screen.printAt(6, 60, "Set up completed: 0 distance");
+        break;
+      }
+
+      // Some indexes, like 3, do not have an axis used. If the 
+      // value is more than 0, then it does calculate the 
+      // difference for that value, otherwise it does not
+
+      if (xPos[runAuton-1] != 0) {
+
+        // Calculate and indicate how far way the position is
+        diffX = xPos[runAuton-1] - inputX;
+        Brain.Screen.printAt(6, 40, "Move bot %d horizontally", diffX);
+      } else {
+
+        // indicate that this axis is not used
+        Brain.Screen.clearLine(2);
+        Brain.Screen.printAt(6, 40, "No horizontal"); 
+      }
+      
+      if (yPos[runAuton-1] != 0){
+
+        // Calculate and indicate how far way the position is
+        diffY = yPos[runAuton-1] - inputY; 
+        Brain.Screen.printAt(6, 60, "Move bot %d vertically", diffY);
+      } else {
+
+        // indicate that this axis is not used
+        Brain.Screen.clearLine(3);
+        Brain.Screen.printAt(6, 60, "No vertical");
+      }
+      
+      std::cout<< inputX << " , " << inputY <<std::endl; // Output the values (Used when debugging)
+      
+      // Update sensor variables
+      inputX = sideX.objectDistance(mm); 
+      inputY = sideY.objectDistance(mm);
+      
+      // If BOTH axises have reached their position then the code breaks out of the loop
+      if((inputX == xPos[runAuton-1]) && (inputY == yPos[runAuton-1])){
+
+        // print the final values of diffX and diffY on the Brain screen
+        Brain.Screen.printAt(6, 40, "Set up completed: %d distance", diffX);
+        Brain.Screen.printAt(6, 60, "Set up completed: %d distance", diffY);
+
+        // Output the values (Used when debugging)
+        std::cout<< "Finished at: " <<inputX << " , " << inputY <<std::endl;
+        break;
+      }
+      wait(20, msec); // save CPU resources
+    }
+  }
+
 
 }
 
@@ -552,13 +582,14 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
+  
   Brain.Screen.clearScreen(); // Clears screen on the brain for diagnosis
 
   // If the file exists and is currently writing to a new file then 
   // the code will collect what autonomous was selected
   if (cardInserted && createdNameExists){
     // attaches the string to the buffer character array
-    std::sprintf(buffer,"Auton Selected: %d\n\n", runAuton);
+    std::sprintf(buffer,"Auton Selected: %d\n\n\n", runAuton);
     // writes the buffer array to the data file
     Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
   }
@@ -581,7 +612,8 @@ void autonomous(void) {
     wait(1.5, sec);
     targetDist = 500;
   } else if (runAuton == 2){ // if 2 then nothing for now
-    // code
+    targetDist = 400;
+    targetTurn = 360;
 
   
   } else if(runAuton == 3){ // if 3 then Skills Auton will run for autonomous
@@ -603,9 +635,11 @@ void autonomous(void) {
     LEDGreen.off();
     Cata.stop(coast);
   }
-  // if anything other than 1, 2, or 3 is chosen then default to none selected 
+  // if anything other than 1-3 is chosen then 
+  // the default option is to terminate the task
+  // and not let the robot move for Auton 
   else {
-    task::stop(drivePD); // stops the function
+    task::stop(PD_Control); // terminates the function
   } 
 }
 
@@ -624,6 +658,15 @@ void autonomous(void) {
 void usercontrol(void) {
   // User control code here, inside the loop
 
+  // If the file exists and is currently writing to a new file then 
+  // the code will collect what autonomous was selected
+  if (cardInserted && createdNameExists){
+    // attaches the string to the buffer character array
+    std::sprintf(buffer,"Driver Control:\n\n\n");
+    // writes the buffer array to the data file
+    Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+  }
+
   // Turns off the LEDs
   LEDGreen.off();
   LEDRed.off();
@@ -639,10 +682,14 @@ void usercontrol(void) {
   bool toggleEnabledCata = false;
   bool buttonPressedCata = false;
 
-  // Cooldown boolean
-  bool onCooldown = false;
-  Brain.resetTimer(); // Resets the timer to 0 for the cooldown logic 
+  // Cooldown variables
 
+  // Logic booleans to negate repetition when writing data
+  bool onCooldown = false; 
+  bool ran = false; 
+
+  Brain.resetTimer(); // Resets the timer to 0 for the cooldown logic
+  int elapsedTime; // elapsed Driver time (in Seconds)
 
   while (1) {
     
@@ -660,30 +707,38 @@ void usercontrol(void) {
     // Cooldown logic //
 
     // Capture the current time from the brain's timer in seconds (type declaration)
-    int elapsedTime = Brain.Timer.value();  
+    elapsedTime = Brain.Timer.value();  
 
-    // turn on the onCooldown boolean every 15 seconds
-    if (elapsedTime % 15 == 0) {
+    // Check if the SD card is inserted and a file is open
+    if(cardInserted && createdNameExists){
 
-      onCooldown = true; 
+      // turn on the onCooldown boolean every 15 seconds
+      if (elapsedTime % 15 == 0) {
 
-      // prints the elapsed time and onCooldown bool for debugging
-      std::cout << elapsedTime << onCooldown << std::endl; 
+        onCooldown = true; 
 
-    } else { // if not an interval of 15 turn off cooldown
+        // prints the elapsed time and onCooldown bool for debugging
+        std::cout << elapsedTime << onCooldown << std::endl; 
 
-      onCooldown = false;
-      std::cout << elapsedTime << std::endl; // prints the elapsed time
+      } else { // if not an interval of 15 turn off cooldown
+        ran = false;
+        onCooldown = false;
+        std::cout << elapsedTime << std::endl; // prints the elapsed time
+      }
     }
 
-    /* If the SD card is inserted, the file has been created, and the system is on cooldown,
-      format a message with the average motor temperature and elapsed time, and write it 
-      to the SD card under the specified file name 
+    /* 
+      If the SD card is inserted, the file is being written to, the system is not on 
+      cooldown, and the same message has not been ran before, then format a message 
+      with the average motor temperature, elapsed time, motor efficiency and write 
+      it to the SD card under the specified file name 
     */
-    if((cardInserted && createdNameExists) && onCooldown){
-      std::sprintf(buffer,"Avg motor temp %d at %d seconds\n", motorTempAvg, elapsedTime);
+    if(cardInserted && createdNameExists && onCooldown && !ran){
+      totalElapsedTime += elapsedTime;
+      std::sprintf(buffer,"Avg motor temp: %d at %d Driver | %d Total seconds\n\n", motorTempAvg, elapsedTime, totalElapsedTime);
       Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
+      motorData();
+      ran = true;
     }
     
     
@@ -693,7 +748,7 @@ void usercontrol(void) {
 
     // if the average is less than 79 degrees fahrenheit the words on the screen
     // will be blue, otherwise the words on the screen will be orange/ tan
-    if (motorTempAvg < 79){
+    if (motorTempAvg < 110){
       Brain.Screen.setPenColor("#769CBC"); // sets the color to blue
     } else {
       Brain.Screen.setPenColor("#F1B04C"); // sets the color to orange/ tan
@@ -703,17 +758,17 @@ void usercontrol(void) {
 
     // Motor Temp Prints
     // Left side
-    Brain.Screen.printAt(0, 60, "LF Motor Temp %f", leftFront.temperature(pct));
-    Brain.Screen.printAt(0, 80, "LM Motor Temp %f", leftMid.temperature(pct));
-    Brain.Screen.printAt(0, 100, "LB Motor Temp %f", leftBack.temperature(pct));
+    Brain.Screen.printAt(6, 60, "LF Motor Temp %f", leftFront.temperature(pct));
+    Brain.Screen.printAt(6, 80, "LM Motor Temp %f", leftMid.temperature(pct));
+    Brain.Screen.printAt(6, 100, "LB Motor Temp %f", leftBack.temperature(pct));
     
     // right side
-    Brain.Screen.printAt(0, 140, "RB Motor Temp %f", rightBack.temperature(pct));
-    Brain.Screen.printAt(0, 160, "RM Motor Temp %f", rightMid.temperature(pct));
-    Brain.Screen.printAt(0, 180, "RF Motor Temp %f", rightFront.temperature(pct));
+    Brain.Screen.printAt(6, 140, "RB Motor Temp %f", rightBack.temperature(pct));
+    Brain.Screen.printAt(6, 160, "RM Motor Temp %f", rightMid.temperature(pct));
+    Brain.Screen.printAt(6, 180, "RF Motor Temp %f", rightFront.temperature(pct));
     
     // catapult
-    Brain.Screen.printAt(0, 220, "Cata Motor Temp %f", Cata.temperature(pct));
+    Brain.Screen.printAt(6, 220, "Cata Motor Temp %f", Cata.temperature(pct));
   
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
 
