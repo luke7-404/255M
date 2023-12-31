@@ -93,8 +93,20 @@ std::string fileMake(void){
 
 
 
-double lfe, rfe, lme, rme,lbe, rbe, cataEff, intakeEff;
 
+
+// Short hand variable names to compact the code
+/*
+  l = left
+  r = right
+  m = mid
+  b = back
+  e or Eff = efficiency
+*/
+float lfe, rfe, lme, rme,lbe, rbe, cataEff, intakeEff;
+
+// A void function that collects the efficiencies of the motors
+// And writes the data to the SD card
 void motorData(void){
 
   lfe = leftFront.efficiency(pct);
@@ -125,24 +137,24 @@ void motorData(void){
 
 
 // inital number of times the limit switch is pressed
-int launched = 0;
+uint8_t timesLaunched = 0;
 
 // Data collection
-int totalElapsedTime;
+short totalElapsedTime;
 
 // Counts the number of time the limit switch has been pressed
 void launchCount(void){
-  launched++; // Adds one to the number of times the button has been pressed
+  timesLaunched++; // Adds one to the number of times the button has been pressed
 
   // Update number on controller:
   Controller1.Screen.clearLine(3); // Clear line
-  Controller1.Screen.print("Count %d", launched); // change number
+  Controller1.Screen.print("Count %d", timesLaunched); // change number
   
   // when the card is inserted and the file has been created then the code enters the if statement
   if(cardInserted && createdNameExists){
     totalElapsedTime = Brain.Timer.value();
     // stores the data into the buffer character array using printf commands
-    std::sprintf(buffer,"Launch Count: %d | At %d Seconds\n\n\n", launched, totalElapsedTime);
+    std::sprintf(buffer,"Launch Count: %d | At %d Seconds\n\n\n", timesLaunched, totalElapsedTime);
     // Appends the data to the active file
     Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
   }
@@ -155,7 +167,7 @@ void launchCount(void){
 
 
 // Inital number of times the Auton selector switch has been pressed
-int runAuton = 0;
+uint8_t runAuton = 0;
 
 // Changes which Auton is run 
 void AutoSwitch(void){
@@ -275,24 +287,24 @@ void calibrateInertial(void){
 
 //* Lateral Variables
 // Gain variables - Deals with controller sensitivity
-double kP = 0.125385; // error gain 
-double kD = 0.1256; // derivative gain
+const float kP = 0.125385f; // error gain 
+const float kD = 0.1256f; // derivative gain
 
 int error = 0; // the difference from where the goal is to where you are 
 int derivative = 0; // the difference from current error and prevError
 int prevError = 0; // the last error
-int targetDist = 0; // Goal distance (Lateral Movement)
+short targetDist = 0; // Goal distance (Lateral Movement)
 
 
 //* Rotational Variables
 // Gain variables - Deals with controller sensitivity (for turning)
-double Turn_kP = 0.66700000595; // turn error gain
-double Turn_kD = 0.7; // turn derivative gain
+const double Turn_kP = 0.66700000595; // turn error gain
+const float Turn_kD = 0.7f; // turn derivative gain
 
 double TurnError = 0; // the difference from where the goal is to where you are
 int TurnDerivative = 0; // the difference from current turn error and TurnPrevError
 int TurnPrevError = 0; // the last turn error
-double targetTurn = 0; // Goal Distance (Rotational Movement)
+float targetTurn = 0; // Goal Distance (Rotational Movement)
 
 //* Boolean Variables 
 bool controlON = true; // Toggles the while loop for the controller
@@ -479,8 +491,8 @@ void pre_auton(void) {
      The numbers were determined through testing 
      starting positions.
     */
-    int xPos[3] = {90, 0, 0};
-    int yPos[3] = {1480, 0, 302};
+    short xPos[3] = {90, 0, 0};
+    short yPos[3] = {1480, 0, 302};
 
     /*
     xPos[0] and yPos[0] = 1st Auton setup
@@ -490,13 +502,13 @@ void pre_auton(void) {
 
     // Use the distance sensors, sideX and sideY, to get the distance to the  
     // perimeters in millimeters and store them in inputX and inputY variables
-    int inputX = sideX.objectDistance(mm); 
-    int inputY = sideY.objectDistance(mm);
+    short inputX = sideX.objectDistance(mm); 
+    short inputY = sideY.objectDistance(mm);
 
     // Initialization of the integer variables diffX and diffY
     // These will hold the difference of a position and the input
     // Side respective
-    int diffX, diffY;
+    short diffX, diffY;
     
     // While the input of X and Y do NOT equal the predetermined 
     // numbers then the code will loop until it does
@@ -630,7 +642,7 @@ void autonomous(void) {
     resetSens = true;
     targetDist=-300;
     Cata.spin(fwd, 80, pct);
-    waitUntil(launched == 54);
+    waitUntil(timesLaunched == 54);
     LEDRed.on();
     LEDGreen.off();
     Cata.stop(coast);
@@ -689,7 +701,7 @@ void usercontrol(void) {
   bool ran = false; 
 
   Brain.resetTimer(); // Resets the timer to 0 for the cooldown logic
-  int elapsedTime; // elapsed Driver time (in Seconds)
+  short elapsedTime; // elapsed Driver time (in Seconds)
 
   while (1) {
     
