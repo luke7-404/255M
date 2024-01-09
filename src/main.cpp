@@ -49,8 +49,7 @@ competition Competition;
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
 
-uint8_t myData[ 1000 ]; // Unsigned int array to store data (1000 bytes)
-char buffer[ 100 ]; // Character array that stores the collected data (100 bytes)(1 character = 1 byte)
+char buffer[ 1000 ]; // Character array that stores the collected data
 
 // Declaration of the variable that the file name will be stored at
 std::string fileName; 
@@ -64,10 +63,10 @@ std::string fileMake(void){
 
   // For loop that names the verion of the file
   // if its the first file its 0, if its the second then it will be 1, so on and so forth
-  for(int i = 0; i<1000;i++){ // i checks if it's less than 1000 (file name relatively unbounded)
+  for(short i = 0; i<1000;i++){ // i checks if it's less than 1000 (file name relatively unbounded)
 
     std::stringstream temp; // needed a string stream variable to allow type conversion (int i to string)
-    temp << "dataFile_" << i << ".txt"; // stream in the components of the file name
+    temp << "dataFile_" << i << ".csv"; // stream in the components of the file name
     fileName = temp.str(); // converts the string stream into a complete string
 
     // checks if that name does NOT exist
@@ -95,49 +94,11 @@ std::string fileMake(void){
 
 
 
-// Short hand variable names to compact the code
-/*
-  l = left
-  r = right
-  m = mid
-  b = back
-  e or Eff = efficiency
-*/
-float lfe, rfe, lme, rme,lbe, rbe, cataEff, intakeEff;
-
-// A void function that collects the efficiencies of the motors
-// And writes the data to the SD card
-void motorData(void){
-
-  lfe = leftFront.efficiency(pct);
-  rfe = rightFront.efficiency(pct);
-  lme = leftMid.efficiency(pct);
-  rme = rightMid.efficiency(pct);
-  lbe = leftBack.efficiency(pct);
-  rbe = rightBack.efficiency(pct);
-  cataEff = Cata.efficiency(pct);
-  intakeEff = Intake.efficiency(pct);
-
-  std::sprintf(buffer,"Left Front eff: %.4f | Right Front eff: %.4f\n", lfe, rfe);
-  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-  std::sprintf(buffer,"Left Mid eff: %.4f | Right Mid eff: %.4f\n", lme, rme);
-  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-  std::sprintf(buffer,"Left Back eff: %.4f | Right Back eff: %.4f\n", lbe, rbe);
-  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-  std::sprintf(buffer,"Cata eff: %.4f | Intake eff: %.4f\n\n\n", cataEff, intakeEff);
-  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-}
-
-
-
-
-
-
 // inital number of times the limit switch is pressed
 uint8_t timesLaunched = 0;
+
+// Boolean logic to detect if launched
+bool isDriverControl = Competition.isDriverControl();
 
 // Data collection
 short totalElapsedTime;
@@ -145,20 +106,10 @@ short totalElapsedTime;
 // Counts the number of time the limit switch has been pressed
 void launchCount(void){
   timesLaunched++; // Adds one to the number of times the button has been pressed
-
+  
   // Update number on controller:
   Controller1.Screen.clearLine(3); // Clear line
   Controller1.Screen.print("Count %d", timesLaunched); // change number
-  
-  // when the card is inserted and the file has been created then the code enters the if statement
-  if(cardInserted && createdNameExists){
-    totalElapsedTime = Brain.Timer.value();
-    // stores the data into the buffer character array using printf commands
-    std::sprintf(buffer,"Launch Count: %d | At %d Seconds\n\n\n", timesLaunched, totalElapsedTime);
-    // Appends the data to the active file
-    Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-  }
-  
 }
 
 
@@ -250,6 +201,76 @@ void AutoSwitch(void){
 
 
 
+
+
+
+// Short hand variable names to compact the code
+/*
+  l = left
+  r = right
+  m = mid
+  b = back
+  f = front
+  e or Eff = efficiency
+*/
+float lfe, rfe, lme, rme, lbe, rbe, cataEff, intakeEff;
+
+// A void function that 
+// And writes the data to the SD card
+void addData(short driverTime, int avg, double InertPos, int latErr, double rotErr, int latDeriv,  
+              double rotDeriv, int latPrevErr, double rotPrevErr, double RotMtrPwr, double LatMtrPwr){
+
+  totalElapsedTime = Brain.Timer.value();
+
+  // Calculate the average temperature of all 8 motors in Fahrenheit
+
+  double* tempPtr = new double; // Create a temporary pointer that points to the average of all the motors
+  
+  *tempPtr = (leftFront.temperature(fahrenheit) + 
+              leftMid.temperature(fahrenheit) + 
+              leftBack.temperature(fahrenheit) + 
+              rightBack.temperature(fahrenheit) + 
+              rightMid.temperature(fahrenheit) + 
+              rightFront.temperature(fahrenheit) + 
+              Cata.temperature(fahrenheit)+
+              Intake.temperature(fahrenheit))/8;
+
+  // Floor the double and float values to the 4th decimal place
+  float motorTempAvg = floorf(*tempPtr * 10000) / 10000; 
+  delete tempPtr; // delete the pointer so that there is no memory leak
+  // more flooring
+  float flooredInertPos = floorf(InertPos * 10000) / 10000;
+  float flooredRotErr = floorf(rotErr * 10000) / 10000;
+  float flooredRotDeriv = floorf(rotDeriv * 10000) / 10000;
+  float flooredRotPrevErr = floorf(rotPrevErr * 10000) / 10000;
+  float flooredLMP = floorf(LatMtrPwr * 10000) / 10000;
+  float flooredRMP = floorf(RotMtrPwr * 10000) / 10000;
+  
+  // Updating the variables that hold the motor efficiencies
+  lfe = leftFront.efficiency(pct);
+  rfe = rightFront.efficiency(pct);
+  lme = leftMid.efficiency(pct);
+  rme = rightMid.efficiency(pct);
+  lbe = leftBack.efficiency(pct);
+  rbe = rightBack.efficiency(pct);
+  cataEff = Cata.efficiency(pct);
+  intakeEff = Intake.efficiency(pct);     
+
+  // Use the sprintf function to append all the data to the buffer character array (string)
+  std::sprintf(buffer,"%d , %d , %d , %.4f , %d , %d , %.4f , %d , %.4f , %d , %.4f , %d , %.4f , %.4f , %.4f, %.4f , %.4f , %.4f , %.4f , %.4f , %.4f , %.4f , %.4f\n",
+   totalElapsedTime, driverTime, timesLaunched, motorTempAvg, runAuton, avg, flooredInertPos, latErr, flooredRotErr, latDeriv, 
+   flooredRotDeriv, latPrevErr, flooredRotPrevErr, flooredLMP, flooredRMP, lfe, lme, lbe, rfe, rme, rbe, cataEff, intakeEff);
+  
+  // append the buffer to the data file
+  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
+  
+}
+
+
+
+
+
+
 // function called to calibrate the inertial sensor
 void calibrateInertial(void){
   Inertial.calibrate(); // Starts the sensor calibration
@@ -279,7 +300,6 @@ void calibrateInertial(void){
 
 
 
-
 //---------------//
 // PD controller //
 //---------------//
@@ -302,13 +322,13 @@ const double Turn_kP = 0.66700000595; // turn error gain
 const float Turn_kD = 0.7f; // turn derivative gain
 
 double TurnError = 0; // the difference from where the goal is to where you are
-int TurnDerivative = 0; // the difference from current turn error and TurnPrevError
-int TurnPrevError = 0; // the last turn error
+double TurnDerivative = 0; // the difference from current turn error and TurnPrevError
+double TurnPrevError = 0; // the last turn error
 float targetTurn = 0; // Goal Distance (Rotational Movement)
 
 //* Boolean Variables 
 bool controlON = true; // Toggles the while loop for the controller
-bool resetSens = false; // Toggles if the sensors are reset to 0
+bool resetSens = false; // Toggles on to reset sensors to 0
 
 
 int PD_Control(void){ // Declaration of the integer type function
@@ -383,47 +403,13 @@ int PD_Control(void){ // Declaration of the integer type function
     rightMid.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
     rightFront.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
 
-    /*
-     if an SD card is inserted and a created name exists the function will write data onto a file
-
-     The data includes:
-     - Time since program start
-     - average lateral position and rotation position (inertial sensor value)
-     - lateral error and rotation error 
-     - lateral derivative and rotation derivative 
-     - previous lateral error and previous rotation error
-     - lateral motor power and rotation motor power
-     - Motor efficiencies (efficiency is output power / input power)
-    */
-
     if (cardInserted && createdNameExists){
-
-      totalElapsedTime = Brain.Timer.value();
-      
-      std::sprintf(buffer,"Data Collection at %d Seconds:\n\n", totalElapsedTime);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      std::sprintf(buffer,"Lat avg: %d | Rot pos: %.4f\n", avg, floorf(InertPos * 10000) / 10000);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      std::sprintf(buffer,"Lat error: %d | Rot error: %.4f\n", error, floorf(TurnError * 10000) / 10000);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      std::sprintf(buffer,"Lat Deriv: %d | Rot Deriv: %d\n", derivative, TurnDerivative);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      std::sprintf(buffer,"Lat PrevE: %d | Rot PrevE: %d\n", prevError, TurnPrevError);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-
-      float flooredLMP = floorf(LatMtrPwr * 10000) / 10000;
-      float flooredRMP = floorf(RotMtrPwr * 10000) / 10000;
-
-      std::sprintf(buffer,"LatMtrPwr: %.4f | RotMtrPwr: %.4f\n\n\n", flooredLMP, flooredRMP);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
 
       // This is a function call that writes the motor 
       // data such as motor efficiency to the SD card
-      motorData(); 
+      addData(0, avg, InertPos, error, TurnError, 
+              derivative, TurnDerivative, prevError,
+              TurnPrevError, RotMtrPwr, LatMtrPwr); 
     }
 
     // re-assign the error as prevError and TurnPrevError for next cycle
@@ -466,9 +452,9 @@ void pre_auton(void) {
   Brain.Screen.printAt(6, 220, "Cata Motor Temp %f", Cata.temperature(pct));
   
   // resets the position to 0
-  rightTrack.setPosition(0, degrees); 
-  leftTrack.setPosition(0, degrees);
-  Cata.setPosition(0, degrees);
+  rightTrack.resetPosition(); 
+  leftTrack.resetPosition();;
+  Cata.resetPosition();
 
   // Turns off the LEDs
   LEDGreen.off();
@@ -491,8 +477,8 @@ void pre_auton(void) {
      The numbers were determined through testing 
      starting positions.
     */
-    short xPos[3] = {90, 0, 0};
-    short yPos[3] = {1480, 0, 302};
+    short xPos[3] = {0, 0, 90};
+    short yPos[3] = {302, 0, 1480};
 
     /*
     xPos[0] and yPos[0] = 1st Auton setup
@@ -518,18 +504,19 @@ void pre_auton(void) {
       
       // Since Auton 2 is not actively used it breaks out 
       // of the loop when runAuton = 2
+      /*
       if (runAuton == 2) {
         Brain.Screen.printAt(6, 40, "Set up completed: 0 distance");
         Brain.Screen.printAt(6, 60, "Set up completed: 0 distance");
         break;
       }
-
+      */
       // Some indexes, like 3, do not have an axis used. If the 
       // value is more than 0, then it does calculate the 
       // difference for that value, otherwise it does not
 
       if (xPos[runAuton-1] != 0) {
-
+        Brain.Screen.clearLine(2);
         // Calculate and indicate how far way the position is
         diffX = xPos[runAuton-1] - inputX;
         Brain.Screen.printAt(6, 40, "Move bot %d horizontally", diffX);
@@ -541,7 +528,7 @@ void pre_auton(void) {
       }
       
       if (yPos[runAuton-1] != 0){
-
+        Brain.Screen.clearLine(3);
         // Calculate and indicate how far way the position is
         diffY = yPos[runAuton-1] - inputY; 
         Brain.Screen.printAt(6, 60, "Move bot %d vertically", diffY);
@@ -597,15 +584,6 @@ void autonomous(void) {
   
   Brain.Screen.clearScreen(); // Clears screen on the brain for diagnosis
 
-  // If the file exists and is currently writing to a new file then 
-  // the code will collect what autonomous was selected
-  if (cardInserted && createdNameExists){
-    // attaches the string to the buffer character array
-    std::sprintf(buffer,"Auton Selected: %d\n\n\n", runAuton);
-    // writes the buffer array to the data file
-    Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-  }
-
   Controller1.Screen.clearLine(3); // Clears the controller screen for the catapult counter
 
   // Turns off the LEDs
@@ -613,24 +591,22 @@ void autonomous(void) {
   LEDRed.off();
 
   task drivePD(PD_Control); // starts the PD controller as a task
-
+  resetSens = true;
   extendIntake.set(true); // Extends the intake out
 
   // Depending on the number that runAuton holds that is the code ran
   if (runAuton == 1){ // if 1 then (for now) will run the autonomous skills code    
     LEDGreen.on();
     //targetTurn = -130;
-    targetDist = 2300; //1125
-    wait(1.5, sec);
-    targetDist = 500;
+    targetDist = 3000; //1125
+    //wait(1.5, sec);
+    //targetDist = 500;
   } else if (runAuton == 2){ // if 2 then nothing for now
-    targetDist = 400;
-    targetTurn = 360;
 
   
   } else if(runAuton == 3){ // if 3 then Skills Auton will run for autonomous
     LEDGreen.on();
-    targetDist= -2000; //-2400
+    targetDist= -1940; //-2000
     wait(1,sec);
     LEDGreen.off();
     LEDRed.on();
@@ -638,14 +614,28 @@ void autonomous(void) {
     wait(1,sec);
     LEDRed.off();
     LEDGreen.on();
-    wait(1.5, sec);
+    wait(.5, sec);
     resetSens = true;
     targetDist=-300;
     Cata.spin(fwd, 80, pct);
-    waitUntil(timesLaunched == 54);
+    waitUntil(timesLaunched == 48);
     LEDRed.on();
     LEDGreen.off();
     Cata.stop(coast);
+    resetSens = true;
+    targetDist = 1865;
+    targetTurn = -180;
+    wait(0.3, sec);
+    resetSens = true;
+    targetDist = -1865;
+    wait(0.3, sec);
+    targetTurn = 0;
+    wait(0.2, sec);
+    piston.set(true);
+    targetDist = 2300;
+    wait(0.2, sec);
+    targetDist = 0;
+    piston.set(false);
   }
   // if anything other than 1-3 is chosen then 
   // the default option is to terminate the task
@@ -666,18 +656,9 @@ void autonomous(void) {
 /*                              User Control Task                            */
 /*---------------------------------------------------------------------------*/
 
-
 void usercontrol(void) {
   // User control code here, inside the loop
 
-  // If the file exists and is currently writing to a new file then 
-  // the code will collect what autonomous was selected
-  if (cardInserted && createdNameExists){
-    // attaches the string to the buffer character array
-    std::sprintf(buffer,"Driver Control:\n\n\n");
-    // writes the buffer array to the data file
-    Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-  }
 
   // Turns off the LEDs
   LEDGreen.off();
@@ -694,12 +675,7 @@ void usercontrol(void) {
   bool toggleEnabledCata = false;
   bool buttonPressedCata = false;
 
-  // Cooldown variables
-
-  // Logic booleans to negate repetition when writing data
-  bool onCooldown = false; 
-  bool ran = false; 
-
+  // Data variables
   Brain.resetTimer(); // Resets the timer to 0 for the cooldown logic
   short elapsedTime; // elapsed Driver time (in Seconds)
 
@@ -707,63 +683,28 @@ void usercontrol(void) {
     
     // Motor temp code // 
 
-    // Calculate the average temperature of all 7 motors in Fahrenheit
-    int motorTempAvg = (leftFront.temperature(fahrenheit) + 
-                        leftMid.temperature(fahrenheit) + 
-                        leftBack.temperature(fahrenheit) + 
-                        rightBack.temperature(fahrenheit) + 
-                        rightMid.temperature(fahrenheit) + 
-                        rightFront.temperature(fahrenheit) + 
-                        Cata.temperature(fahrenheit))/7;
-    
-    // Cooldown logic //
-
     // Capture the current time from the brain's timer in seconds (type declaration)
     elapsedTime = Brain.Timer.value();  
 
     // Check if the SD card is inserted and a file is open
     if(cardInserted && createdNameExists){
 
-      // turn on the onCooldown boolean every 15 seconds
-      if (elapsedTime % 15 == 0) {
+      // if the robot is nearing the end of the match it will do one more file addition
+      if (elapsedTime+5 == 180) {
 
-        onCooldown = true; 
+        addData(elapsedTime, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); 
 
         // prints the elapsed time and onCooldown bool for debugging
-        std::cout << elapsedTime << onCooldown << std::endl; 
+        std::cout << "Added Data at " << elapsedTime << "seconds"<< std::endl; 
+      } 
+      // Otherwise, any interval of 15 seconds before the end of the match will be recorded
+      else if (elapsedTime % 15 == 0) {
+        
+        addData(elapsedTime, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); 
 
-      } else { // if not an interval of 15 turn off cooldown
-        ran = false;
-        onCooldown = false;
-        std::cout << elapsedTime << std::endl; // prints the elapsed time
-      }
-    }
-
-    /* 
-      If the SD card is inserted, the file is being written to, the system is not on 
-      cooldown, and the same message has not been ran before, then format a message 
-      with the average motor temperature, elapsed time, motor efficiency and write 
-      it to the SD card under the specified file name 
-    */
-    if(cardInserted && createdNameExists && onCooldown && !ran){
-      totalElapsedTime += elapsedTime;
-      std::sprintf(buffer,"Avg motor temp: %d at %d Driver | %d Total seconds\n\n", motorTempAvg, elapsedTime, totalElapsedTime);
-      Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-      motorData();
-      ran = true;
-    }
-    
-    
-    // motors go to half speed at 55 degrees celsius and go to quarter at 60 degrees
-    // green zone would most likely be anywhere below 40C and they really shouldn't 
-    // be going above 60C unless theres a problem
-
-    // if the average is less than 79 degrees fahrenheit the words on the screen
-    // will be blue, otherwise the words on the screen will be orange/ tan
-    if (motorTempAvg < 110){
-      Brain.Screen.setPenColor("#769CBC"); // sets the color to blue
-    } else {
-      Brain.Screen.setPenColor("#F1B04C"); // sets the color to orange/ tan
+        // prints the elapsed time and onCooldown bool for debugging
+        std::cout << "Added Data at " << elapsedTime << "seconds"<< std::endl; 
+      } 
     }
     
 
@@ -808,20 +749,21 @@ void usercontrol(void) {
     
     // Catapult Motor Logic
     // boolean to get if the button is pressed (true) or it isn't pressed (false)
-    bool buttonB = Controller1.ButtonB.pressing();
+    bool buttonA = Controller1.ButtonA.pressing();
 
     // Toggle Logic
-    if (buttonB && !buttonPressedCata){
+    if (buttonA && !buttonPressedCata){
       buttonPressedCata = true; 
       toggleEnabledCata = !toggleEnabledCata;
     }
-    else if (!buttonB) buttonPressedCata = false;
+    else if (!buttonA) buttonPressedCata = false;
 
     // Code For toggle Enabled or Disabled
     if(toggleEnabledCata){
       LEDRed.on();
       Cata.spin(fwd, 80, pct); // Spins Cata on a toggle if it needs to be on for longer
     } 
+
 
     // Manual Input
     // when L2 is being pressed spin forward
@@ -831,9 +773,7 @@ void usercontrol(void) {
       LEDRed.off();
       Cata.stop(coast); // else stop
     } 
-
-
-
+    
     // Wings/ blockers Logic
     // boolean to get if the button is pressed (true) or it isn't pressed (false)
     bool buttonX = Controller1.ButtonX.pressing();
@@ -882,14 +822,32 @@ int main() {
     // when the function returns the file name it is assigned to the variable fileNew
     std::string fileNew = fileMake();
 
+    uint8_t myData[ 1000 ]; // Unsigned int array to store data (1000 bytes)
+    
     // Creates and saves the file
     Brain.SDcard.savefile(fileNew.c_str(), myData, sizeof(myData));
 
-    // stores the string into the buffer character array using printf commands
-    std::sprintf(buffer,"File name %s\n\n\n\n", fileNew.c_str());
+    /*
+      A constant character array (string) to use as column 
+      titles for the CSV File. The columns are:
 
-    // As a test the file name is written to the file
-    Brain.SDcard.appendfile(fileNew.c_str(), (uint8_t *)buffer, strlen(buffer));
+      Total Time, Driver Time, Launch Counter, Avg Motor Temp,
+      Auton Selected, Drivetrain Avg, Inertial Position, Lat Error,
+      Rot Error, Lat Derivative, Rot Derivative, Prev Error,
+      Turn Prev Error, Lat Mtr Pwr, Rot Mtr Pwr, Left Front Eff, 
+      Left Mid Eff, Left Back Eff, Right Front Eff, Right Mid Eff, 
+      Right Back Eff, Cata Eff, Intake Eff
+    */
+    const char* header = "Total Time , Driver Time , Launch Counter , Avg Mtr Temp , Auton Selected , Drivetrain Avg , Inertial Position , Lat Error , Rot Error , Lat Deriv , Rot Deriv , Prev Error , Turn Prev Error , Lat Mtr Pwr , Rot Mtr Pwr , Left Front Eff, Left Mid Eff, Left Back Eff , Right Front Eff , Right Mid Eff , Right Back Eff , Cata Eff, Intake Eff";
+    
+    // Append the string to the buffer 
+    std::sprintf(buffer,"%s\n", header);
+
+    // Write the buffer to the file
+    Brain.SDcard.appendfile(fileNew.c_str(), (uint8_t*)buffer , sizeof(buffer));
+
+    // delete the header to use more RAM space 
+    delete header; 
   }
 
   // Run the pre-autonomous function.
