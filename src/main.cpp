@@ -97,9 +97,6 @@ std::string fileMake(void){
 // inital number of times the limit switch is pressed
 uint8_t timesLaunched = 0;
 
-// Boolean logic to detect if launched
-bool isDriverControl = Competition.isDriverControl();
-
 // Data collection
 short totalElapsedTime;
 
@@ -199,29 +196,13 @@ void AutoSwitch(void){
 
 
 
-
-
-
-
-
-// Short hand variable names to compact the code
-/*
-  l = left
-  r = right
-  m = mid
-  b = back
-  f = front
-  e or Eff = efficiency
-*/
-float lfe, rfe, lme, rme, lbe, rbe, cataEff, intakeEff;
-
 // A void function that 
 // And writes the data to the SD card
 void addData(short driverTime, int avg, double InertPos, int latErr, double rotErr, int latDeriv,  
               double rotDeriv, int latPrevErr, double rotPrevErr, double RotMtrPwr, double LatMtrPwr){
 
   totalElapsedTime = Brain.Timer.value();
-
+ 
   // Calculate the average temperature of all 8 motors in Fahrenheit
 
   double* tempPtr = new double; // Create a temporary pointer that points to the average of all the motors
@@ -245,6 +226,17 @@ void addData(short driverTime, int avg, double InertPos, int latErr, double rotE
   float flooredRotPrevErr = floorf(rotPrevErr * 10000) / 10000;
   float flooredLMP = floorf(LatMtrPwr * 10000) / 10000;
   float flooredRMP = floorf(RotMtrPwr * 10000) / 10000;
+
+  // Short hand variable names to compact the code
+  /*
+    l = left
+    r = right
+    m = mid
+    b = back
+    f = front
+    e or Eff = efficiency
+  */
+  float lfe, rfe, lme, rme, lbe, rbe, cataEff, intakeEff;
   
   // Updating the variables that hold the motor efficiencies
   lfe = leftFront.efficiency(pct);
@@ -307,7 +299,7 @@ void calibrateInertial(void){
 
 //* Lateral Variables
 // Gain variables - Deals with controller sensitivity
-const float kP = 0.125385f; // error gain 
+const double kP = 0.125385; // error gain 
 const float kD = 0.1256f; // derivative gain
 
 int error = 0; // the difference from where the goal is to where you are 
@@ -355,6 +347,8 @@ int PD_Control(void){ // Declaration of the integer type function
 
     error = targetDist - avg; // the difference of target and current location
 
+    Brain.Screen.clearScreen();
+
     Brain.Screen.printAt(6, 60, "Error %d", error);
     Brain.Screen.printAt(6, 80, "Avg Position %d", avg);
 
@@ -369,14 +363,14 @@ int PD_Control(void){ // Declaration of the integer type function
 
     // Makes the Inertial sensor a variable with decimal places (readability)
     double InertPos = Inertial.rotation(degrees);
-
+    
     // Adds a limit to the sensor so it doesn't go past 360
     // if the absolute value of the float point number is in 
     // between 360-361 then it sets it back to 0
     if(fabs(InertPos) > 360 && fabs(InertPos) < 361.5){
       InertPos = 0;
     } 
-
+    
     // Error: difference from target and current location
     TurnError = targetTurn - InertPos;  
 
@@ -396,12 +390,12 @@ int PD_Control(void){ // Declaration of the integer type function
 
     // Application of motor powers 
     // when a negative value is applied the signs are flipped
-    leftFront.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
-    leftMid.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
-    leftBack.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
-    rightBack.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
-    rightMid.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
-    rightFront.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+    leftFront.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+    leftMid.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+    leftBack.spin(fwd, LatMtrPwr - RotMtrPwr, pct);
+    rightBack.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
+    rightMid.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
+    rightFront.spin(fwd, LatMtrPwr + RotMtrPwr, pct);
 
     if (cardInserted && createdNameExists){
 
@@ -426,6 +420,96 @@ int PD_Control(void){ // Declaration of the integer type function
 
 
 
+// An integer function that allows for the distance sensors
+// to show how far away we are from a predetermined starting
+// position
+bool positionOn = true;
+int position(void){
+  
+  // Desired position values
+  //const uint8_t xPos = 2; // inches away horizontally
+  uint8_t yPos = 8; // 8 inches away vertically
+  uint16_t inertDeg = 9;
+
+  // Use the distance sensors, sideX and sideY, to get the distance to the  
+  // perimeters in inches and store them in inputX and inputY variables
+  //uint8_t inputX = sideX.objectDistance(inches); 
+  uint8_t inputY = sideY.objectDistance(inches);
+  short inert = Inertial.heading(deg);
+
+  // Definitions of the integer variables diffX and diffY
+  // These will hold the difference of a position and the input
+  // side, respectively
+  //short diffX, diffY;
+  short diffY;
+
+  // While the boolean positionOn is true, 
+  // it will loop the code in the body
+  while (positionOn){
+    
+
+    // for our skills auton we face a different direction
+    // if runAuton equals 3 then xPos, yPos, and inertDeg
+    // equal different values
+    if(runAuton == 3){
+      yPos = 5; // 5 inches for yPos
+      inertDeg = 31;
+    } else { 
+      // if else, then xPos, yPos, and inertDeg are back to their default
+      yPos = 8;
+      inertDeg = 9;
+    }
+
+    // If the value is not than 0, then it calculates the 
+    // difference for that value, otherwise it does not
+    /*
+    if (xPos != 0) {
+      Brain.Screen.clearLine(2);
+      // Calculate and indicate how far way the position is
+      diffX = xPos - inputX;
+      Brain.Screen.printAt(6, 40, "Move bot %d horizontally", diffX);
+    } else {
+
+      // indicate that this axis is not used
+      Brain.Screen.clearLine(2);
+      Brain.Screen.printAt(6, 40, "No horizontal"); 
+    }
+    */ 
+
+    // If the value is not than 0, then it calculates the 
+    // difference for that value, otherwise it does not
+    if (yPos != 0){
+      Brain.Screen.clearLine(3);
+      // Calculate and indicate how far way the position is
+      diffY = yPos - inputY; 
+      Brain.Screen.printAt(6, 60, "Move bot %d vertically", diffY);
+    } else {
+
+      // indicate that this axis is not used
+      Brain.Screen.clearLine(3);
+      Brain.Screen.printAt(6, 60, "No vertical");
+    }
+
+    if (inertDeg != 0){
+      Brain.Screen.clearLine(8);
+      Brain.Screen.printAt(0, 160, "Inertial Position %d", inert - inertDeg);
+    }
+    
+      
+    //std::cout<< inputX << " , " << inputY <<std::endl; // Output the values (Used when debugging)
+      
+    // Update sensor variables
+    //inputX = sideX.objectDistance(inches); 
+    inputY = sideY.objectDistance(inches);
+    inert = Inertial.heading(deg);
+
+    task::sleep(50); // save CPU resources
+  }
+  return 1;
+}
+
+
+
 
 
 
@@ -436,20 +520,21 @@ void pre_auton(void) {
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
 
-  calibrateInertial(); // calls to calibrate the inertial
+  // calls to calibrate the inertial when the Brain is on field control
+  if(Competition.isFieldControl() || Competition.isCompetitionSwitch()) calibrateInertial(); 
   
   // Pre-Match motor temps
-
+  
   // Left side
   Brain.Screen.printAt(6, 100, "LF Motor Temp %f", leftFront.temperature(pct));
   Brain.Screen.printAt(6, 120, "LM Motor Temp %f", leftMid.temperature(pct));
   Brain.Screen.printAt(6, 140, "LB Motor Temp %f", leftBack.temperature(pct));
   // right side
-  Brain.Screen.printAt(6, 160, "RB Motor Temp %f", rightBack.temperature(pct));
-  Brain.Screen.printAt(6, 180, "RM Motor Temp %f", rightMid.temperature(pct));
-  Brain.Screen.printAt(6, 200, "RF Motor Temp %f", rightFront.temperature(pct));
+  Brain.Screen.printAt(6, 180, "RB Motor Temp %f", rightBack.temperature(pct));
+  Brain.Screen.printAt(6, 200, "RM Motor Temp %f", rightMid.temperature(pct));
+  Brain.Screen.printAt(6, 220, "RF Motor Temp %f", rightFront.temperature(pct));
   // catapult
-  Brain.Screen.printAt(6, 220, "Cata Motor Temp %f", Cata.temperature(pct));
+  Brain.Screen.printAt(6, 240, "Cata Motor Temp %f", Cata.temperature(pct));
   
   // resets the position to 0
   rightTrack.resetPosition(); 
@@ -466,104 +551,10 @@ void pre_auton(void) {
   Brain.Screen.printAt(6, 20, "!!! NO Auton selected !!!"); // 0 = No auton
   Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
   LEDRed.on(); // LED indication
-  
-  // Checks if the game state is enabled and in Driver Control or Autonomous
-  // When the state is not enabled the positioning loop will run 
-  if(!Competition.isEnabled()){
 
-
-    /* Declare integer variable arrays xPos and yPos to  
-     store the X and Y positions (in Millimeters) 
-     The numbers were determined through testing 
-     starting positions.
-    */
-    short xPos[3] = {0, 0, 90};
-    short yPos[3] = {302, 0, 1480};
-
-    /*
-    xPos[0] and yPos[0] = 1st Auton setup
-    xPos[1] and yPos[1] = 2nd Auton setup
-    xPos[2] and yPos[2] = Skills Auton setup
-    */
-
-    // Use the distance sensors, sideX and sideY, to get the distance to the  
-    // perimeters in millimeters and store them in inputX and inputY variables
-    short inputX = sideX.objectDistance(mm); 
-    short inputY = sideY.objectDistance(mm);
-
-    // Initialization of the integer variables diffX and diffY
-    // These will hold the difference of a position and the input
-    // Side respective
-    short diffX, diffY;
-    
-    // While the input of X and Y do NOT equal the predetermined 
-    // numbers then the code will loop until it does
-    // since arrays are indexed starting at 0 we need to subtract 1
-    // runAuton = 1 | calculate positions 1-1 = 0: refer to line 486
-    while ((inputX != xPos[runAuton-1]) && (inputY != yPos[runAuton-1])){
-      
-      // Since Auton 2 is not actively used it breaks out 
-      // of the loop when runAuton = 2
-      /*
-      if (runAuton == 2) {
-        Brain.Screen.printAt(6, 40, "Set up completed: 0 distance");
-        Brain.Screen.printAt(6, 60, "Set up completed: 0 distance");
-        break;
-      }
-      */
-      // Some indexes, like 3, do not have an axis used. If the 
-      // value is more than 0, then it does calculate the 
-      // difference for that value, otherwise it does not
-
-      if (xPos[runAuton-1] != 0) {
-        Brain.Screen.clearLine(2);
-        // Calculate and indicate how far way the position is
-        diffX = xPos[runAuton-1] - inputX;
-        Brain.Screen.printAt(6, 40, "Move bot %d horizontally", diffX);
-      } else {
-
-        // indicate that this axis is not used
-        Brain.Screen.clearLine(2);
-        Brain.Screen.printAt(6, 40, "No horizontal"); 
-      }
-      
-      if (yPos[runAuton-1] != 0){
-        Brain.Screen.clearLine(3);
-        // Calculate and indicate how far way the position is
-        diffY = yPos[runAuton-1] - inputY; 
-        Brain.Screen.printAt(6, 60, "Move bot %d vertically", diffY);
-      } else {
-
-        // indicate that this axis is not used
-        Brain.Screen.clearLine(3);
-        Brain.Screen.printAt(6, 60, "No vertical");
-      }
-      
-      std::cout<< inputX << " , " << inputY <<std::endl; // Output the values (Used when debugging)
-      
-      // Update sensor variables
-      inputX = sideX.objectDistance(mm); 
-      inputY = sideY.objectDistance(mm);
-      
-      // If BOTH axises have reached their position then the code breaks out of the loop
-      if((inputX == xPos[runAuton-1]) && (inputY == yPos[runAuton-1])){
-
-        // print the final values of diffX and diffY on the Brain screen
-        Brain.Screen.printAt(6, 40, "Set up completed: %d distance", diffX);
-        Brain.Screen.printAt(6, 60, "Set up completed: %d distance", diffY);
-
-        // Output the values (Used when debugging)
-        std::cout<< "Finished at: " <<inputX << " , " << inputY <<std::endl;
-        break;
-      }
-      wait(20, msec); // save CPU resources
-    }
-  }
-
-
+  // Create a task to assist positioning the robot 
+  task checkPlace(position);
 }
-
-
 
 
 
@@ -581,9 +572,10 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  
-  Brain.Screen.clearScreen(); // Clears screen on the brain for diagnosis
 
+  task::stop(position);
+  Brain.Screen.clearScreen(); // Clears screen on the brain for diagnosis
+  
   Controller1.Screen.clearLine(3); // Clears the controller screen for the catapult counter
 
   // Turns off the LEDs
@@ -592,50 +584,74 @@ void autonomous(void) {
 
   task drivePD(PD_Control); // starts the PD controller as a task
   resetSens = true;
-  extendIntake.set(true); // Extends the intake out
 
   // Depending on the number that runAuton holds that is the code ran
   if (runAuton == 1){ // if 1 then (for now) will run the autonomous skills code    
     LEDGreen.on();
-    //targetTurn = -130;
-    targetDist = 3000; //1125
-    //wait(1.5, sec);
-    //targetDist = 500;
-  } else if (runAuton == 2){ // if 2 then nothing for now
+    targetDist = 2900; 
+    wait(1.25, sec);
+    targetDist = 1000;
+    wait(1.5, sec);
+    targetTurn = 200;
+    resetSens = true;
+    targetDist = 0;  
+    piston.set(true);
 
-  
+  } else if (runAuton == 2){ // if 2 then nothing for now
+    LEDGreen.on();
+    targetDist = 2700; // inital push into the side, then move back
+    Intake.spin(fwd, 100, pct);
+    wait(1.25, sec);
+    targetTurn = 90; //117
+    wait(1, sec);
+    Intake.spin(reverse, 100, pct);
+    resetSens = true;
+    targetDist = 700;
+    wait(1.25, sec);
+    Intake.stop(coast);
+    targetDist = -1500; // move back and align to face the other side
+    wait(1, sec);
+    pistonBack.set(true);
+    targetDist = 1200;
+    wait(1.5, sec);
+    targetDist = -500;
+    pistonBack.set(false);
   } else if(runAuton == 3){ // if 3 then Skills Auton will run for autonomous
     LEDGreen.on();
-    targetDist= -1940; //-2000
-    wait(1,sec);
-    LEDGreen.off();
-    LEDRed.on();
-    targetTurn = -30;
-    wait(1,sec);
-    LEDRed.off();
-    LEDGreen.on();
-    wait(.5, sec);
+    targetDist = 2900; // inital push into the side, then move back
+    wait(0.75, sec);
+    targetTurn = 10;
+    wait(1.25, sec);
+    targetDist = 1000;
+    targetTurn = -75;
+    
+    // catapult
+    Cata.spin(fwd, 80, pct); // spin the catapult motor
+    waitUntil(timesLaunched == 70); // wait for the catapult to spin 46 times
+    Cata.stop(coast); // stop catapult motor
+
+    // move across field
     resetSens = true;
-    targetDist=-300;
-    Cata.spin(fwd, 80, pct);
-    waitUntil(timesLaunched == 48);
-    LEDRed.on();
-    LEDGreen.off();
-    Cata.stop(coast);
-    resetSens = true;
-    targetDist = 1865;
-    targetTurn = -180;
-    wait(0.3, sec);
-    resetSens = true;
-    targetDist = -1865;
-    wait(0.3, sec);
-    targetTurn = 0;
-    wait(0.2, sec);
-    piston.set(true);
-    targetDist = 2300;
-    wait(0.2, sec);
     targetDist = 0;
-    piston.set(false);
+    targetTurn = -160;
+    wait(0.3, sec);
+    targetDist = 750;
+    wait(0.2, sec);
+    targetTurn = -145;
+    wait(0.2, sec);
+    resetSens = true;
+    targetTurn = -135;
+    targetDist = 0;
+    wait(0.2, sec);
+    targetDist = 400;
+    targetTurn = -125;    
+    wait(0.2, sec);
+    resetSens = true;
+    targetDist = 1000;
+    targetTurn = -120;
+    //wait(0.2, sec);
+    //targetDist = 4000;
+
   }
   // if anything other than 1-3 is chosen then 
   // the default option is to terminate the task
@@ -650,14 +666,14 @@ void autonomous(void) {
 
 
 
-
-
 /*---------------------------------------------------------------------------*/
 /*                              User Control Task                            */
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
   // User control code here, inside the loop
+  task::stop(position);
+  task::stop(PD_Control);
 
 
   // Turns off the LEDs
@@ -667,44 +683,61 @@ void usercontrol(void) {
   controlON = false; // Turns off the PD controller
   Brain.Screen.clearScreen(); // Clears the brain screen for driver control prints
   
-  // Booleans for Wing toggle 
-  bool toggleEnabledWings = false; // two-choice toggle, so we use bool
-  bool buttonPressedWings = false; // logic variable
+  // Variables for Driver Layout Toggle
+  bool shiftEnable = false; // two-choice
+  bool shiftButtonPressed = false; // Place holder 
+  short forward = Controller1.Axis3.value(); // Gets the value of Axis 3
+  short turn = Controller1.Axis1.value(); // Gets the value of Axis 1
   
+  // Motor voltage on a range of -12 to 12
+  double leftVolt; // Declare left side voltage 
+  double rightVolt; // Declare right side voltage
+
   // Booleans for Cata toggle
   bool toggleEnabledCata = false;
   bool buttonPressedCata = false;
 
+  // Booleans for Wing toggle 
+  bool toggleEnabledWings = false; // two-choice toggle, so we use bool
+  bool buttonPressedWings = false; // logic variable
+  bool toggleEnabledFrontWings = false; // two-choice toggle, so we use bool
+  bool buttonPressedFrontWings = false; // logic variable
+
   // Data variables
-  Brain.resetTimer(); // Resets the timer to 0 for the cooldown logic
-  short elapsedTime; // elapsed Driver time (in Seconds)
+  const short previousTime = totalElapsedTime; // Auton time in seconds for offset
+  short driverElapsedTime = 0; // elapsed Driver time (in Seconds)
+
+  // Logic booleans to negate repetition when writing data
+  bool onCooldown = false; 
+  bool ran = false; 
 
   while (1) {
     
-    // Motor temp code // 
-
-    // Capture the current time from the brain's timer in seconds (type declaration)
-    elapsedTime = Brain.Timer.value();  
+    // Motor Data
 
     // Check if the SD card is inserted and a file is open
     if(cardInserted && createdNameExists){
 
-      // if the robot is nearing the end of the match it will do one more file addition
-      if (elapsedTime+5 == 180) {
+      // Calculate the driver time from the brain's timer minus the auton time in seconds
+      // for an offset
+      driverElapsedTime = Brain.Timer.value() - previousTime; 
 
-        addData(elapsedTime, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); 
+      // If time is a multiple of 15, then set the cooldown to true
+      if (driverElapsedTime % 15 == 0){
+        onCooldown = true;
+      } else { // if its not then set ran and cooldown to false
+        ran = false;
+        onCooldown = false;
+      }
+
+      // if the inverse of ran and cooldown are true, call the data function
+      if (!ran && onCooldown) {
+        addData(driverElapsedTime, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); 
 
         // prints the elapsed time and onCooldown bool for debugging
-        std::cout << "Added Data at " << elapsedTime << "seconds"<< std::endl; 
-      } 
-      // Otherwise, any interval of 15 seconds before the end of the match will be recorded
-      else if (elapsedTime % 15 == 0) {
-        
-        addData(elapsedTime, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); 
-
-        // prints the elapsed time and onCooldown bool for debugging
-        std::cout << "Added Data at " << elapsedTime << "seconds"<< std::endl; 
-      } 
+        std::cout << "Added Data at " << driverElapsedTime << "seconds"<< std::endl; 
+        ran = true;
+      }
     }
     
 
@@ -726,24 +759,59 @@ void usercontrol(void) {
     Brain.Screen.setPenColor("#FFFFFF"); // resets the color of the text to white
 
     // Set Velocity of the motors 
+    /*
     leftBack.setVelocity(100, pct);
     leftFront.setVelocity(100, pct);
     leftMid.setVelocity(100, pct);
     rightBack.setVelocity(100, pct);
     rightFront.setVelocity(100, pct);
     rightMid.setVelocity(100, pct);
-    Cata.setVelocity(70, pct);
+    */
 
-    // These lines set the controllers analog sticks to the left motors nad right motors using the tank drive layout
-    //This is Left Side AXES 3
-    leftFront.spin(fwd, Controller1.Axis3.position(pct), pct);
-    leftMid.spin(fwd, Controller1.Axis3.position(pct), pct);
-    leftBack.spin(fwd, Controller1.Axis3.position(pct), pct);
-    //This is Right Side AXES 2
-    rightBack.spin(fwd, Controller1.Axis2.position(pct), pct);
-    rightMid.spin(fwd, Controller1.Axis2.position(pct), pct);
-    rightFront.spin(fwd, Controller1.Axis2.position(pct), pct);
+    // Driver Analog Stick Layout Logic
+    // boolean to get if the button is pressed (true) or it isn't pressed (false)
+    bool buttonR2 = Controller1.ButtonR2.pressing();
 
+    // Toggle Logic
+    if (buttonR2 && !shiftButtonPressed){
+      shiftButtonPressed = true; 
+      shiftEnable = !shiftEnable;
+    }
+    else if (!buttonR2) shiftButtonPressed = false;
+
+    // Code For toggle Enabled or Disabled
+    if(shiftEnable){
+      // These lines set the controllers analog sticks to the left  
+      // motors nad right motors using the tank drive layout
+
+      //This is Left Side AXIS 2
+      leftFront.spin(fwd, Controller1.Axis2.position(pct), pct);
+      leftMid.spin(fwd, Controller1.Axis2.position(pct), pct);
+      leftBack.spin(fwd, Controller1.Axis2.position(pct), pct);
+      //This is Right Side AXIS 3
+      rightBack.spin(fwd, Controller1.Axis3.position(pct), pct);
+      rightMid.spin(fwd, Controller1.Axis3.position(pct), pct);
+      rightFront.spin(fwd, Controller1.Axis3.position(pct), pct);
+
+    } else {
+
+      // Update variables
+      forward = Controller1.Axis3.value();
+      turn = Controller1.Axis1.value();
+
+      // Calculate voltage
+      leftVolt = 12 * ((forward - turn) / 100.0);
+      rightVolt = 12 * ((forward + turn) / 100.0);
+
+      // Apply leftVolt to the left motors
+      leftFront.spin(fwd, leftVolt, volt);
+      leftMid.spin(fwd, leftVolt, volt);
+      leftBack.spin(fwd, leftVolt, volt);
+      // Apply rightVolt to the right motors
+      rightBack.spin(fwd, rightVolt, volt);
+      rightMid.spin(fwd, rightVolt, volt);
+      rightFront.spin(fwd, rightVolt, volt);
+    }
 
     // Button Assignment //
     
@@ -761,14 +829,14 @@ void usercontrol(void) {
     // Code For toggle Enabled or Disabled
     if(toggleEnabledCata){
       LEDRed.on();
-      Cata.spin(fwd, 80, pct); // Spins Cata on a toggle if it needs to be on for longer
+      Cata.spin(fwd, 83, pct); // Spins Cata on a toggle if it needs to be on for longer
     } 
 
 
     // Manual Input
     // when L2 is being pressed spin forward
     else if(Controller1.ButtonL2.pressing()) {
-      Cata.spin(fwd, 80, pct); //100
+      Cata.spin(fwd, 83, pct); //100
     } else{
       LEDRed.off();
       Cata.stop(coast); // else stop
@@ -791,6 +859,27 @@ void usercontrol(void) {
 
     } else piston.set(false); // close wings
 
+
+
+
+
+    // Wings/ blockers Logic
+    // boolean to get if the button is pressed (true) or it isn't pressed (false)
+    bool buttonY = Controller1.ButtonY.pressing();
+
+    // Toggle Logic
+    if (buttonY && !buttonPressedFrontWings){
+      buttonPressedFrontWings = true; 
+      toggleEnabledFrontWings = !toggleEnabledFrontWings;
+    }
+    else if (!buttonY) buttonPressedFrontWings = false;
+
+    // Code For toggle Enabled or Disabled
+    if(toggleEnabledFrontWings){
+      pistonBack.set(true); // open wings
+
+    } else pistonBack.set(false); // close wings
+
     if(Controller1.ButtonL1.pressing()){
       Intake.spin(fwd, 100, pct);
     } else if (Controller1.ButtonR1.pressing()) {
@@ -807,22 +896,21 @@ void usercontrol(void) {
 //
 
 
+// Unsigned int array to store data (2500 bytes/ 2.5 Kilobytes)
+uint8_t myData[ 2500 ]; 
+
 int main() {
   // Set up callbacks for autonomous and driver control periods.
   Competition.autonomous(autonomous);
   Competition.drivercontrol(usercontrol);
 
-  Auton1.pressed(AutoSwitch); // When bumper is pressed it cycles through different autonomous
-  
-  // When the limit switch is pressed it counts how many times it has gone off
-  cataLimit.pressed(launchCount); 
+  Competition.bStopAllTasksBetweenModes = true;
 
   // Checks if the SD card is inserted into the Brain
   if(cardInserted){
+
     // when the function returns the file name it is assigned to the variable fileNew
     std::string fileNew = fileMake();
-
-    uint8_t myData[ 1000 ]; // Unsigned int array to store data (1000 bytes)
     
     // Creates and saves the file
     Brain.SDcard.savefile(fileNew.c_str(), myData, sizeof(myData));
@@ -845,13 +933,15 @@ int main() {
 
     // Write the buffer to the file
     Brain.SDcard.appendfile(fileNew.c_str(), (uint8_t*)buffer , sizeof(buffer));
-
-    // delete the header to use more RAM space 
-    delete header; 
   }
 
   // Run the pre-autonomous function.
   pre_auton();
+
+  Auton1.pressed(AutoSwitch); // When bumper is pressed it cycles through different autonomous
+  
+  // When the limit switch is pressed it counts how many times it has gone off
+  cataLimit.pressed(launchCount); 
 
   // Prevent main from exiting with an infinite loop.
   while (true) {
